@@ -1,0 +1,45 @@
+)lib IML IML- SHAPKG
+[toHex b for b in constantsSHA_1()]
+[toHex e for e in initialHashValuesSHA_1()]
+b := shaPadding512(263745239845762398457629348::Bits)
+sha_1 b
+~b
+sha_1 ~b
+c := shaPadding512(47860439856703495876049587695875987095870987907983465729348752369487562398475693248)
+sha_1 c
+sha_1 (b /\ c)
+sha_1 (b \/ c)
+-- next: ASCII code for JG\n:
+jg : Bits := [0,1,0,0, 1,0,1,0, 0,1,0,0, 0,1,1,1, 0,0,0,0, 1,0,1,0]
+toHex jg
+sha_1 jg
+-- comparison with shasum of operating system
+)sys cat jg.dat
+)sys hexdump jg.dat
+)sys shasum jg.dat
+-- a second example
+a ==> 10
+b ==> 11
+c ==> 12
+d ==> 13
+e ==> 14
+f ==> 15
+)sys cat jg2.dat
+)sys hexdump jg2.dat
+lijg2 := [4,a, 4,f, 4,8, 4,1, 4,e, 4,e, 4,5, 5,3 , 2,0, 4,7, 5,2, 4,1, 4,2, 4,d, 4,5,  4,9, 4,5, 5,2, 0,a]
+jg2 : Bits := addLeadingZeros(wholeRadix(lijg2)$RadixExpansion(16) :: INT :: NNI :: Bits)
+#jg2
+sha_1 jg2
+)sys shasum jg2.dat
+-- reading in a Textfile, modify path appropriately
+jgTF : TextFile := open(filename("/Users/jgrabmeier/arbeiten/merkleTree/fricas/", "jg2", "dat"))
+s := readLine!(jgTF)
+jg2' := lineToBits s
+toHex jg2'
+sha_1 jg2'
+)sys shasum jg2.dat
+-- now we check the hash code of sha.spad
+shaspadTF : FileName  := filename("/Users/jgrabmeier/arbeiten/merkleTree/fricas/", "sha", "spad")
+shaspadBits : Bits := textFileToBits shaspadTF
+sha_1 shaspadBits
+)sys shasum sha.spad

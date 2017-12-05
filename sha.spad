@@ -1,0 +1,232 @@
+-- Copyright (c) 2017 J. Grabmeier
+-- All rights reserved.
+-- version 1 03.12.2017 
+
+)abbrev package SHAPKG SHAPackage
+
+++ Author: Johannes Grabmeier
+++ Date Created: 2017-12-03
+++ Date Last Updated:
+++ Basic Functions:
+++ Related Constructors:
+++ Also See:
+++ AMS Classifications:
+++ Keywords:
+++ References: FIPS-180-4 of NIST
+++ Description:
+++   The package SHAPackage provides some of the SHA hash code functions.
+
+SHAPackage(): public == private where
+  B    ==> Bits
+  I    ==> Integer
+  HX   ==> HexadecimalExpansion
+  NNI  ==> NonNegativeInteger
+  IML  ==> InternalMessageLevel
+  OF   ==> OutputForm
+  mLP  ==> messageLevelPointer
+  msg  ==> message
+
+  public ==> InternalMessageLevel with
+  -----------------------------------------------------------------------------
+  -- extensions of Bits:
+  -----------------------------------------------------------------------------
+    "+": (B,B) -> B
+      ++ a+b adds two 32 bit words, interpreted as binary numbers
+      ++ and takes the remainder w.r.to divisor 2^32.
+    coerce: List I -> B
+      ++ coerce(li) coerces a list of Integers, only 0 and 1 to Bits.
+    coerce: List Boolean -> B
+      ++ coerce(li) coerces a list of Booleans to Bits.
+    coerce: B -> NNI
+      ++ coerce(b) coerces a bit word to the corresponding natural 
+      ++ number using the binary representation.
+    coerce: NNI -> B
+      ++ coerce(n) coerces a natural number to Bits using its binary 
+      ++ representation.
+    rotateLeft: (B, NNI)  -> B
+      ++ rotateLeft(b, n) performs a cyclic left shift of b by n positions.
+    rotateRight: (B, NNI)  -> B
+      ++ rotateRight(b, n) performs a cyclic right shift of b by n positions.
+    split: (B, PositiveInteger)  -> List B
+      ++ split(b,n) splits b in a sequence of bit words of length n, the last
+      ++ one possibly being shorter.
+    toHex: B  -> HexadecimalExpansion
+      ++ toHex(b) interpretes b as a hexadecimal number.
+    lineToBits: String -> B
+      ++ lineToBits(s) considers a ASCII code string as a line of textfiles,
+      ++ each character is transfered to an 8-bit word, and end-of-line code
+      ++ 0A = 0000 1010 is added.
+    textFileToBits: FileName -> B
+      ++ lineToBits(fn) reads in the ASCII text file as Bits.
+    addLeadingZeros: B -> B
+      ++ addLeadingZeros(s) adds as many 0 as necessary for the number of bits
+      ++ being a multiple of 8.
+  -----------------------------------------------------------------------------
+  -- SHA help functions
+  -----------------------------------------------------------------------------
+    initialHashValuesSHA_1: () -> List B
+      ++ initialHashValuesSHA_1() returns the 5 32 bit words, the initial hash 
+      ++ values of SHA-1. 
+    constantsSHA_1: () -> List B
+      ++ constantsSHA_1() returns the 4 32 bit words, used as constants.
+    shaPadding512: B -> B
+      ++ shaPadding512(lb) performs the SHA padding by extending bits from B, 
+      ++ result's length is a multiple of 512.
+    shaPadding1024: B -> B
+      ++ shaPadding1024(lb) performs the SHA padding by extending bits from B, 
+      ++ result's length is ++ a multiple of 1024.
+    function_sha_1: (B, B, B, NNI) -> B
+      ++ function_sha_1(x,y,z,t) uses the following operations:
+  -----------------------------------------------------------------------------
+  -- SHA-1
+  -----------------------------------------------------------------------------
+    sha_1_binary: B -> B
+      ++ sha_1_binary(m) computes the hash code of a message m with at most 2^64-1 bits.
+      ++ This is the SHA-1 hash functions of NIST.
+    sha_1: B -> HX
+      ++ sha_1(m) computes the hash code as a hexadecimal number of a message m with at 
+      ++ most 2^64-1 bits.  ++ This is the SHA-1 hash functions of NIST.
+  private ==> add
+    import OF
+  -----------------------------------------------------------------------------
+  -- constants
+  -----------------------------------------------------------------------------
+    -- 67452301
+    -- efcdab89
+    -- 98badcfe 
+    -- 10325476 
+    -- c3d2e1f0
+    initialHashValuesSHA_1(): List B == [
+	[0,1,1,0,  0,1,1,1, 0,1,0,0, 0,1,0,1, 0,0,1,0, 0,0,1,1, 0,0,0,0, 0,0,0,1]::List I ::B,_
+	[1,1,1,0,  1,1,1,1, 1,1,0,0, 1,1,0,1, 1,0,1,0, 1,0,1,1, 1,0,0,0, 1,0,0,1]::List I ::B,_
+	[1,0,0,1,  1,0,0,0, 1,0,1,1, 1,0,1,0, 1,1,0,1, 1,1,0,0, 1,1,1,1, 1,1,1,0]::List I ::B,_
+	[0,0,0,1,  0,0,0,0, 0,0,1,1, 0,0,1,0, 0,1,0,1, 0,1,0,0, 0,1,1,1, 0,1,1,0]::List I ::B,_
+	[1,1,0,0,  0,0,1,1, 1,1,0,1, 0,0,1,0, 1,1,1,0, 0,0,0,1, 1,1,1,1, 0,0,0,0]::List I ::B _
+    ]
+    -- 5a827999  0 <= t <= 19 UTF: 8805
+    -- 6ed9eba1 20 <= t <= 39
+    -- 8f1bbcdc 40 <= t <= 59
+    -- ca62c1d6	60 <= t <= 79
+    constantsSHA_1(): List B == [
+	[0,1,0,1,  1,0,1,0, 1,0,0,0, 0,0,1,0, 0,1,1,1, 1,0,0,1, 1,0,0,1, 1,0,0,1]::List I ::B,_
+	[0,1,1,0,  1,1,1,0, 1,1,0,1, 1,0,0,1, 1,1,1,0, 1,0,1,1, 1,0,1,0, 0,0,0,1]::List I ::B,_
+	[1,0,0,0,  1,1,1,1, 0,0,0,1, 1,0,1,1, 1,0,1,1, 1,1,0,0, 1,1,0,1, 1,1,0,0]::List I ::B,_
+	[1,1,0,0,  1,0,1,0, 0,1,1,0, 0,0,1,0, 1,1,0,0, 0,0,0,1, 1,1,0,1, 0,1,1,0]::List I ::B _
+    ]
+    endOfLine : B := [0,0,0,0, 1,0,1,0] :: List I :: B
+  -----------------------------------------------------------------------------
+  -- global functions
+  -----------------------------------------------------------------------------
+    addLeadingZeros(b: B): B == 
+      (r8 := #b rem 8) > 0 => concat( new( (8-r8):: NNI, 0) :: B, b) 
+      b
+    textFileToBits(fn: FileName): B == 
+      b : B := empty()
+      f : TextFile := open fn
+      while not endOfFile? f repeat
+        s := readLine!(f)
+        if mLP 3 then print blankSeparate [msg "line = ", s :: OF]
+        if mLP 3 then print blankSeparate [msg "bits are", lineToBits(s) :: OF]
+	b := concat(b, lineToBits s)
+      close! f
+      b
+    lineToBits(s: String): B ==
+      --l : NNI := 1+#s
+      sb : B := concat(numer(wholeRadix([lookup(c)-1 for c in entries s]@List(Integer))$RadixExpansion(256))::NNI::B,endOfLine)
+      --d : NNI := (l-#sb) :: NNI
+      --d > 0 => concat( new(d, 0) :: B, sb)
+      addLeadingZeros sb
+    ((a: B) + (b: B)): B == 
+      ab : NNI := (a::NNI)+(b::NNI) 
+      lab : List I  := wholeRagits(ab :: RadixExpansion 2)
+      #lab < 32 => concat( new((32-#lab)::NNI, 0), lab) :: B
+      last(lab, 32) :: B	
+    coerce(b: B): NNI == 
+	li : List Integer := [ if e then 1 else 0 for e in entries b]
+	numer(wholeRadix([ if e then 1 else 0 for e in entries b])$RadixExpansion(2))  :: NNI
+    coerce(lB: List Boolean): B == construct lB
+    coerce(lI: List I): B == [(x=1)::Boolean for x in lI] :: B
+    coerce(n: NNI): B == 
+      ln : List I := wholeRagits(n :: I :: RadixExpansion 2)
+      lb : List Boolean := [(x=1)::Boolean for x in ln]
+      lb :: B
+    toHex(b: B): HexadecimalExpansion == b :: Integer :: HexadecimalExpansion
+    function_sha_1(x: B, y: B, z: B, t: NNI): B ==
+      t <= 19 => xor( x/\y , (~x) /\ z) 
+      t <= 39 => xor( x, xor(y,z) )
+      t <= 59 => xor(x/\y, xor( x/\z, y/\z) )
+      xor(x, xor(y, z) )
+    rotateLeft(b: B, l: NNI): B ==
+      eB : List Boolean := entries b
+      concat(rest(eB, l), first(eB, l)) :: B
+    rotateRight(b: B, l: NNI): B == 
+      eB : List Boolean := entries b
+      nl : NNI := (#b - l) :: NNI
+      concat(rest(eB, nl), first(eB, nl)) :: B
+    split(b: B, n: PositiveInteger): List B ==
+      eB : List Boolean := entries b
+      lB : List B := []
+      while not empty? eB repeat
+	if #eB > n then 
+	  lB := concat(lB,  first(eB, n) :: B)  
+	  eB := rest(eB, n)
+        else
+	  lB := concat(lB,  eB :: B)  
+	  eB := []
+      lB
+    sha_1_binary(m: B): B ==
+       H : List B := initialHashValuesSHA_1()
+       M : List B := split(shaPadding512 m, 512)
+       if mLP 1 then print blankSeparate [msg "M = ", M :: OF]
+       W : List B := []
+       N : NNI := #M
+       if mLP 1 then print blankSeparate [msg "N = ", N :: OF]
+       T : B 
+       K : List B := constantsSHA_1()
+       for i in 1..N repeat
+          if mLP 1 then 
+	    print dashLine()
+            print blankSeparate [msg "i = ", i :: OF]
+          -- step 1
+          W := split(M.i, 32)  -- components 1..16 remain  unchanged
+          if mLP 1 then print blankSeparate [msg "W = ", W :: OF]
+	  for t in 17..80 repeat
+	    W := concat(W, rotateLeft( xor( xor(W(t-3), W(t-8)), xor(W(t-14), W(t-16)) ), 1) )
+          if mLP 1 then print blankSeparate [msg "W = ", W :: OF]
+          -- step 2
+	  a : B := H.1
+	  b : B := H.2
+	  c : B := H.3
+	  d : B := H.4
+	  e : B := H.5
+          -- step 3
+          for t in 0..79 repeat
+            if mLP 2 then 
+		print dottedLine()
+                print blankSeparate [msg "t = ", t :: OF]
+	    T := rotateLeft(a, 5) + function_sha_1(b,c,d,t) + e + K.(1+(t quo 20)) + W.(t+1)
+            if mLP 2 then print blankSeparate [msg "T = ", T :: OF]
+	    e := d; d := c; c := rotateLeft(b, 30); b := a; a := T
+          H.1 := a + H.1
+          H.2 := b + H.2
+          H.3 := c + H.3
+          H.4 := d + H.4
+          H.5 := e + H.5
+       concat H
+    sha_1(m: B): HX == toHex sha_1_binary m
+    shaPadding512(lb: B):  B ==
+      l : NNI := #lb
+      k	: Integer := 448-((l+1) rem 512) 
+      if k < 0 then k := k+512
+      lb' : B := new(k :: NNI ,false)
+      lb' := concat(lb, concat(true, lb'))
+      lb'' : B := l :: B
+      concat(lb', concat(bits((64-#lb'')::NNI, false), lb'') )
+    shaPadding1024(lb: B):  B ==
+      l : NNI := #lb
+      k	: Integer := 896-((l+1) rem 1024) 
+      if k < 0 then k := k+1024
+      lb' : B := new(k :: NNI ,false)
+      lb' := concat(lb, concat(true, lb'))
+      lb'' : B := l :: B
+      concat(lb', concat(bits((128-#lb'')::NNI, false), lb'') )
