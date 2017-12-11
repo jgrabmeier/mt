@@ -1,12 +1,13 @@
 -- Copyright (c) 2017 J. Grabmeier
 -- All rights reserved.
+-- version 2 11.12.2017 
 -- version 1 03.12.2017 
 
 )abbrev package SHAPKG SHAPackage
 
 ++ Author: Johannes Grabmeier
 ++ Date Created: 2017-12-03
-++ Date Last Updated:
+++ Date Last Updated: 2017-12-11
 ++ Basic Functions:
 ++ Related Constructors:
 ++ Also See:
@@ -15,12 +16,22 @@
 ++ References: FIPS-180-4 of NIST
 ++ Description:
 ++   The package SHAPackage provides some of the SHA hash code functions.
+++   sha_1 implements SHA-1, the hash code being a hexadecimal, leading zeros 
+++      are missing! Can be applied both to a binary word of Bits or to
+++      hexadecimal number.
+++   sha_1_binary implements SHA-1, the hash code being a binary word, leading 0 
+++      are present.
+++   merkle_tree_sha_1 computes the Merkle hash tree for a list of binary words and
+++   we provode auditProof and verifyAuditProof as functions to compute and verify
+++   a proof that a given hash code is the leaf hash of a binary word in the tree.
 
 SHAPackage(): public == private where
   B    ==> Bits
   I    ==> Integer
   HX   ==> HexadecimalExpansion
   NNI  ==> NonNegativeInteger
+  MT   ==> BinaryTree HexadecimalExpansion
+  HXLR ==> Record(hash: HX, left?: Boolean) -- left = true, right = false
   IML  ==> InternalMessageLevel
   OF   ==> OutputForm
   mLP  ==> messageLevelPointer
@@ -51,7 +62,9 @@ SHAPackage(): public == private where
       ++ split(b,n) splits b in a sequence of bit words of length n, the last
       ++ one possibly being shorter.
     toHex: B  -> HexadecimalExpansion
-      ++ toHex(b) interpretes b as a hexadecimal number.
+      ++ toHex(b) interpretes b in Bits as a hexadecimal number.
+    toBits: HexadecimalExpansion -> B
+      ++ toBits(hx) interpretes hx as an element of Bits.
     lineToBits: String -> B
       ++ lineToBits(s) considers a ASCII code string as a line of textfiles,
       ++ each character is transfered to an 8-bit word, and end-of-line code
@@ -61,6 +74,10 @@ SHAPackage(): public == private where
     addLeadingZeros: B -> B
       ++ addLeadingZeros(s) adds as many 0 as necessary for the number of bits
       ++ being a multiple of 8.
+    addLeadingZeros: (B, NNI) -> B
+      ++ addLeadingZeros(s, b) adds leading zeros, if #s < n, such the result
+      ++ has n bits, otherwise it returns b.
+    concat: (HX, HX) -> B
   -----------------------------------------------------------------------------
   -- SHA help functions
   -----------------------------------------------------------------------------
@@ -85,7 +102,29 @@ SHAPackage(): public == private where
       ++ This is the SHA-1 hash functions of NIST.
     sha_1: B -> HX
       ++ sha_1(m) computes the hash code as a hexadecimal number of a message m with at 
-      ++ most 2^64-1 bits.  ++ This is the SHA-1 hash functions of NIST.
+      ++ most 2^64-1 bits. This is the SHA-1 hash functions of NIST.
+    sha_1: HX -> HX
+      ++ sha_1(hx) computes the hash code as a hexadecimal number of a message m with at 
+      ++ most 2^16-1 hexadecimal ragits. This is the SHA-1 hash functions of NIST.
+      ++ Be aware, that if hx is a SHA-1 hash, leadings are missing, so you to first
+      ++ 0-bits, to have 160 bits.
+  -----------------------------------------------------------------------------
+  -- Merkle Tree Hashing
+  -----------------------------------------------------------------------------
+    merkle_tree_sha_1: List B -> MT
+      ++ merkle_tree_sha_1(lb) computes the Merkle hash tree - i.e. the log - 
+      ++ for the records of block lb.
+    auditProof: (MT, HX) -> List HXLR
+      ++ auditProof(mt, hx) requires hx to be the value of a leaf and returns the
+      ++ hashes and the info, whether it is the left (true) or right (false) 
+      ++ child of the parent node, which are necessary, to prove the way from 
+      ++ hx to the root hash.
+    verifyAuditProof: (HX, List HXLR, HX) -> Boolean
+      ++ verifyAuditProof(rootHash, auditProof, leafHash) uses the list of 
+      ++ hashes of auditProof with left/right information and the leafHash to
+      ++ verify, that rootHash is gained by the given way from the leaf to the 
+      ++ root hash.
+
   private ==> add
     import OF
   -----------------------------------------------------------------------------
@@ -117,6 +156,9 @@ SHAPackage(): public == private where
   -----------------------------------------------------------------------------
   -- global functions
   -----------------------------------------------------------------------------
+    addLeadingZeros(b: B, n: NNI): B == 
+      #b < n => concat( new( (n-#b):: NNI, 0) :: B, b) 
+      b
     addLeadingZeros(b: B): B == 
       (r8 := #b rem 8) > 0 => concat( new( (8-r8):: NNI, 0) :: B, b) 
       b
@@ -131,10 +173,7 @@ SHAPackage(): public == private where
       close! f
       b
     lineToBits(s: String): B ==
-      --l : NNI := 1+#s
       sb : B := concat(numer(wholeRadix([lookup(c)-1 for c in entries s]@List(Integer))$RadixExpansion(256))::NNI::B,endOfLine)
-      --d : NNI := (l-#sb) :: NNI
-      --d > 0 => concat( new(d, 0) :: B, sb)
       addLeadingZeros sb
     ((a: B) + (b: B)): B == 
       ab : NNI := (a::NNI)+(b::NNI) 
@@ -150,7 +189,10 @@ SHAPackage(): public == private where
       ln : List I := wholeRagits(n :: I :: RadixExpansion 2)
       lb : List Boolean := [(x=1)::Boolean for x in ln]
       lb :: B
+    toBits(hx: HX): Bits == wholePart(hx) :: NNI :: Bits
     toHex(b: B): HexadecimalExpansion == b :: Integer :: HexadecimalExpansion
+    concat(hxl: HX, hxr: HX): B ==
+      concat( addLeadingZeros(toBits hxl, 160), addLeadingZeros(toBits hxr, 160) )
     function_sha_1(x: B, y: B, z: B, t: NNI): B ==
       t <= 19 => xor( x/\y , (~x) /\ z) 
       t <= 39 => xor( x, xor(y,z) )
@@ -177,22 +219,22 @@ SHAPackage(): public == private where
     sha_1_binary(m: B): B ==
        H : List B := initialHashValuesSHA_1()
        M : List B := split(shaPadding512 m, 512)
-       if mLP 1 then print blankSeparate [msg "M = ", M :: OF]
+       if mLP 3 then print blankSeparate [msg "M = ", M :: OF]
        W : List B := []
        N : NNI := #M
-       if mLP 1 then print blankSeparate [msg "N = ", N :: OF]
+       if mLP 3 then print blankSeparate [msg "N = ", N :: OF]
        T : B 
        K : List B := constantsSHA_1()
        for i in 1..N repeat
-          if mLP 1 then 
+          if mLP 3 then 
 	    print dashLine()
             print blankSeparate [msg "i = ", i :: OF]
           -- step 1
           W := split(M.i, 32)  -- components 1..16 remain  unchanged
-          if mLP 1 then print blankSeparate [msg "W = ", W :: OF]
+          if mLP 3 then print blankSeparate [msg "W = ", W :: OF]
 	  for t in 17..80 repeat
 	    W := concat(W, rotateLeft( xor( xor(W(t-3), W(t-8)), xor(W(t-14), W(t-16)) ), 1) )
-          if mLP 1 then print blankSeparate [msg "W = ", W :: OF]
+          if mLP 3 then print blankSeparate [msg "W = ", W :: OF]
           -- step 2
 	  a : B := H.1
 	  b : B := H.2
@@ -201,11 +243,11 @@ SHAPackage(): public == private where
 	  e : B := H.5
           -- step 3
           for t in 0..79 repeat
-            if mLP 2 then 
+            if mLP 3 then 
 		print dottedLine()
                 print blankSeparate [msg "t = ", t :: OF]
 	    T := rotateLeft(a, 5) + function_sha_1(b,c,d,t) + e + K.(1+(t quo 20)) + W.(t+1)
-            if mLP 2 then print blankSeparate [msg "T = ", T :: OF]
+            if mLP 3 then print blankSeparate [msg "T = ", T :: OF]
 	    e := d; d := c; c := rotateLeft(b, 30); b := a; a := T
           H.1 := a + H.1
           H.2 := b + H.2
@@ -214,6 +256,7 @@ SHAPackage(): public == private where
           H.5 := e + H.5
        concat H
     sha_1(m: B): HX == toHex sha_1_binary m
+    sha_1(hx : HX): HX == toHex sha_1_binary toBits hx
     shaPadding512(lb: B):  B ==
       l : NNI := #lb
       k	: Integer := 448-((l+1) rem 512) 
@@ -230,3 +273,67 @@ SHAPackage(): public == private where
       lb' := concat(lb, concat(true, lb'))
       lb'' : B := l :: B
       concat(lb', concat(bits((128-#lb'')::NNI, false), lb'') )
+  -----------------------------------------------------------------------------
+  -- Merkle Tree Hashing
+  -----------------------------------------------------------------------------
+    merkle_tree_sha_1(lb: List B): MT ==  
+      lh : List HX := [sha_1(b) for b in lb]
+      if mLP 2 then print blankSeparate [msg "lh= ", lh :: OF]
+      lmt : List MT := [binaryTree(hx) for hx in lh]
+      if mLP 2 then print blankSeparate [msg "lmt= ", lmt :: OF]
+      lmt' : List MT := []
+      if mLP 2 then print blankSeparate [msg "lmt'= ", lmt' :: OF]
+      while not empty? rest lmt repeat
+        if mLP 2 then print equalLine()
+        lmt' := copy lmt
+        if mLP 2 then print blankSeparate [msg "lmt'= ", lmt' :: OF]
+        lmt := []
+        while not empty? rest lmt' repeat
+          if mLP 2 then print dashLine()
+	  lmt := concat(lmt, binaryTree( first lmt', 
+      	    sha_1( concat( first(lmt').value, first(rest(lmt')).value)), 
+	      first rest lmt' )  ) 
+          if mLP 2 then print blankSeparate [msg "lmt= ", lmt :: OF]
+          lmt' := rest rest lmt'
+        if not empty? lmt' then lmt := concat(lmt, first lmt')
+        if mLP 2 then print blankSeparate [msg "lmt= ", lmt :: OF]
+      first lmt
+    auditProof(mt: MT, lf: HX): List HXLR == 
+      if mLP 2 then print blankSeparate [msg "start auditProof"]
+      ct : MT := binaryTree lf
+      pt : MT 
+      lhx : List HXLR := []
+      lnd : List MT := nodes mt 
+      rootFound? : Boolean := false	
+      found? : Boolean := false	
+      while not rootFound? repeat
+        if mLP 2 then print equalLine()
+        if mLP 2 then print blankSeparate [msg "look for parents of ct = ", ct :: OF]
+        for nd in lnd for i in 1..#lnd repeat 
+          if mLP 2 then print blankSeparate [msg "nd = ", nd :: OF]
+          found? := false
+          if child?(ct, nd) then 
+	    pt := nd
+	    lnd :=  delete!(lnd, i)
+            if mLP 2 then print blankSeparate [msg "pt of = ", ct :: OF, msg " is ", pt :: OF]
+            if pt.left =  ct then 
+	      lhx := concat(lhx, [pt.right.value, false])
+	    else
+	      lhx := concat(lhx, [pt.left.value, true])
+	    ct := pt
+	    found? := true
+	    break
+	rootFound? := not found?
+      lhx
+    verifyAuditProof(rtH: HX, aP: List HXLR, lfH: HX): Boolean ==
+      hx : HX := lfH
+      for rHXLR in aP repeat
+	if rHXLR.left? 
+	  then hx := sha_1 concat(rHXLR.hash, hx)
+          else hx := sha_1 concat(hx, rHXLR.hash)
+      if hx = rtH then
+        print blankSeparate [msg "verifyAuditProof: proved that ", lfH :: OF, msg " is in the Merkle tree with root hash ", rtH :: OF]
+      else
+        print blankSeparate [msg "verifyAuditProof: second argument is not a proof that  ", lfH :: OF, msg " is in the Merkle tree with root hash ", rtH :: OF]
+      hx = rtH 
+)fin

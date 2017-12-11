@@ -43,3 +43,20 @@ shaspadTF : FileName  := filename("/Users/jgrabmeier/arbeiten/merkleTree/fricas/
 shaspadBits : Bits := textFileToBits shaspadTF
 sha_1 shaspadBits
 )sys shasum sha.spad
+-- Merkle Hash Tree
+--mt := merkle_tree_sha_1 [shaPadding512(223453245234^i::NNI)$SHAPKG for i in 112..116]
+lnni := [(223453245234^i)::NNI for i in 112..116];
+lbits := map(shaPadding512, lnni);
+mt := merkle_tree_sha_1(lbits)
+lf := (leaves mt).3
+tlf := binaryTree lf
+-- auditProof returns the list of hashes, such that the owner of lf
+-- can verify, that his data and hash lf is within the binary tree, provided
+-- that he knows the hash of the root of the tree.
+aP := auditProof(mt, lf)
+-- recomputation of the hash root:
+aPH := [r.hash for r in aP]
+sha_1 concat(sha_1 concat( aPH.2, sha_1 concat(lf, aPH.1)), aPH.3)
+sha_1 concat(sha_1 concat( aPH.2, sha_1 concat(lf, aPH.1)), aPH.3) - value mt
+-- and directly by use of a function:
+verifyAuditProof(value mt, aP, lf)
