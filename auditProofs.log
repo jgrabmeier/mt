@@ -1,0 +1,357 @@
+
+(1) -> )r auditProofs
+)lib IML IML- SHAPKG
+ 
+   InternalMessageLevel is already explicitly exposed in frame frame1 
+   InternalMessageLevel will be automatically loaded when needed from 
+      /Users/jgrabmeier/arbeiten/merkleTree/fricas/IML.NRLIB/IML
+   InternalMessageLevel& is already explicitly exposed in frame frame1 
+   InternalMessageLevel& will be automatically loaded when needed from 
+      /Users/jgrabmeier/arbeiten/merkleTree/fricas/IML-.NRLIB/IML-
+   SHAPackage is already explicitly exposed in frame frame1 
+   SHAPackage will be automatically loaded when needed from 
+      /Users/jgrabmeier/arbeiten/merkleTree/fricas/SHAPKG.NRLIB/SHAPKG
+-- Merkle Hash Tree
+HX := HexadecimalExpansion
+ 
+
+   (1)  HexadecimalExpansion
+                                                                      Type: Type
+MT := BinaryTree HX
+ 
+
+   (2)  BinaryTree(HexadecimalExpansion)
+                                                                      Type: Type
+--mt := merkle_tree_sha_1 [shaPadding512(223453245234^i::NNI)$SHAPKG for i in 112..116]
+lbits := [toBits(223453245234^i) for i in 112..116];
+ 
+
+                                                                Type: List(Bits)
+lbits := map(shaPadding512, lbits);
+ 
+
+                                                                Type: List(Bits)
+mt := merkle_tree_sha_1(lbits)
+ 
+
+   (5)
+   [
+     [
+       [69102FE406120DE7C7EC365D13DE07B510783A90,
+        759BF6AE21B1C30EA01356E88DBE25905EA6DE2B,
+        14DF67E8985505B8A8FE338D473EEDDC97E8732A]
+       ,
+      BABE73C10A15E8CD5C8E231DAC442915FF2028C,
+
+       [446E05C3EA4CE4B97C897E52BFE1F974444FAAEF,
+        1515DBE6D917C141235C6A331F8A1163A3A5E682,
+        FB7526C9DF209E304DDB237FDF73619C9D36922A]
+       ]
+     ,
+    D3E8D8AEDF4C23CEA931376751A9BE7C1223EDFD,
+    548ED4228F44C8001F1BAB1FC2571D85D57E0D2C]
+                                          Type: BinaryTree(HexadecimalExpansion)
+lf := (leaves mt).3
+ 
+
+   (6)  446E05C3EA4CE4B97C897E52BFE1F974444FAAEF
+                                                      Type: HexadecimalExpansion
+tlf := binaryTree lf
+ 
+
+   (7)  446E05C3EA4CE4B97C897E52BFE1F974444FAAEF
+                                          Type: BinaryTree(HexadecimalExpansion)
+-- auditProof returns the list of hashes, such that the owner of lf
+-- can verify, that his data and hash lf is within the binary tree, provided
+-- that he knows the hash of the root of the tree.
+aP := auditProof(mt, lf)
+ 
+
+   (8)
+   [[hash = FB7526C9DF209E304DDB237FDF73619C9D36922A, left? = false],
+    [hash = 759BF6AE21B1C30EA01356E88DBE25905EA6DE2B, left? = true],
+    [hash = 548ED4228F44C8001F1BAB1FC2571D85D57E0D2C, left? = false]]
+                   Type: List(Record(hash: HexadecimalExpansion,left?: Boolean))
+-- recomputation of the hash root:
+aPH := [r.hash for r in aP]
+ 
+
+   (9)
+   [FB7526C9DF209E304DDB237FDF73619C9D36922A,
+    759BF6AE21B1C30EA01356E88DBE25905EA6DE2B,
+    548ED4228F44C8001F1BAB1FC2571D85D57E0D2C]
+                                                Type: List(HexadecimalExpansion)
+sha_1 concat(sha_1 concat( aPH.2, sha_1 concat(lf, aPH.1)), aPH.3)
+ 
+
+   (10)  D3E8D8AEDF4C23CEA931376751A9BE7C1223EDFD
+                                                      Type: HexadecimalExpansion
+sha_1 concat(sha_1 concat( aPH.2, sha_1 concat(lf, aPH.1)), aPH.3) - value mt
+ 
+
+   (11)  0
+                                                      Type: HexadecimalExpansion
+-- and directly by use of a function:
+verifyAuditProof(value mt, aP, lf)
+ 
+   verifyAuditProof: proved that  446E05C3EA4CE4B97C897E52BFE1F974444FAAEF
+      is in the Merkle tree with root hash
+     D3E8D8AEDF4C23CEA931376751A9BE7C1223EDFD
+
+   (12)  true
+                                                                   Type: Boolean
+
+-- new example
+
+lnni := [(70293475092348750239478502934875^i)::NNI for i in 1..13];
+ 
+
+                                                  Type: List(NonNegativeInteger)
+lbits := [shaPadding512 toBits u for u in lnni];
+ 
+
+                                                                Type: List(Bits)
+mt7 := merkle_tree_sha_1(first(lbits,7))
+ 
+
+   (15)
+   [
+     [
+       [F07F977DE683FCDB71347AF1E63FC039EF0F0074,
+        D32CFB6213027B3175E4B750A075CE76F9045AB0,
+        AD7D0CFE4CF22065EEC00AE5F9B3742A3F40C387]
+       ,
+      1C7197BC0774CE0430FD170EE03A8EDCD15A7AE8,
+
+       [F5C3F4F492F985D1D035F053FF5E725B3C647D2C,
+        77E5DC16AA7B08C43AA5A5DD3E4C9B8CF63E527D,
+        6207E607E533B76F87EE21C14F96619C4D0A592D]
+       ]
+     ,
+    553B0303CC1ACBA12A4B8F76148D28A0FA9A2719,
+
+     [
+       [A351D63CD815906118C03FE4415B05D984AC4F91,
+        8CE90FCA31A09C035DF286D1F1A280E31D4A3263,
+        162CEDDB7F3EDEF374CBDD8EBD674375E0202B7A]
+       ,
+      57645DBCA85E17B0DAB46D7F2FB4A9D4F86D1400,
+      CC3B66372ED5AAD9C9060ED9E120BDA3EEB60086]
+     ]
+                                          Type: BinaryTree(HexadecimalExpansion)
+nd_mt7 := nodes mt7
+ 
+
+   (16)
+   [F07F977DE683FCDB71347AF1E63FC039EF0F0074,
+
+     [F07F977DE683FCDB71347AF1E63FC039EF0F0074,
+      D32CFB6213027B3175E4B750A075CE76F9045AB0,
+      AD7D0CFE4CF22065EEC00AE5F9B3742A3F40C387]
+     ,
+    AD7D0CFE4CF22065EEC00AE5F9B3742A3F40C387,
+
+     [
+       [F07F977DE683FCDB71347AF1E63FC039EF0F0074,
+        D32CFB6213027B3175E4B750A075CE76F9045AB0,
+        AD7D0CFE4CF22065EEC00AE5F9B3742A3F40C387]
+       ,
+      1C7197BC0774CE0430FD170EE03A8EDCD15A7AE8,
+
+       [F5C3F4F492F985D1D035F053FF5E725B3C647D2C,
+        77E5DC16AA7B08C43AA5A5DD3E4C9B8CF63E527D,
+        6207E607E533B76F87EE21C14F96619C4D0A592D]
+       ]
+     ,
+    F5C3F4F492F985D1D035F053FF5E725B3C647D2C,
+
+     [F5C3F4F492F985D1D035F053FF5E725B3C647D2C,
+      77E5DC16AA7B08C43AA5A5DD3E4C9B8CF63E527D,
+      6207E607E533B76F87EE21C14F96619C4D0A592D]
+     ,
+    6207E607E533B76F87EE21C14F96619C4D0A592D,
+
+     [
+       [
+         [F07F977DE683FCDB71347AF1E63FC039EF0F0074,
+          D32CFB6213027B3175E4B750A075CE76F9045AB0,
+          AD7D0CFE4CF22065EEC00AE5F9B3742A3F40C387]
+         ,
+        1C7197BC0774CE0430FD170EE03A8EDCD15A7AE8,
+
+         [F5C3F4F492F985D1D035F053FF5E725B3C647D2C,
+          77E5DC16AA7B08C43AA5A5DD3E4C9B8CF63E527D,
+          6207E607E533B76F87EE21C14F96619C4D0A592D]
+         ]
+       ,
+      553B0303CC1ACBA12A4B8F76148D28A0FA9A2719,
+
+       [
+         [A351D63CD815906118C03FE4415B05D984AC4F91,
+          8CE90FCA31A09C035DF286D1F1A280E31D4A3263,
+          162CEDDB7F3EDEF374CBDD8EBD674375E0202B7A]
+         ,
+        57645DBCA85E17B0DAB46D7F2FB4A9D4F86D1400,
+        CC3B66372ED5AAD9C9060ED9E120BDA3EEB60086]
+       ]
+     ,
+    A351D63CD815906118C03FE4415B05D984AC4F91,
+
+     [A351D63CD815906118C03FE4415B05D984AC4F91,
+      8CE90FCA31A09C035DF286D1F1A280E31D4A3263,
+      162CEDDB7F3EDEF374CBDD8EBD674375E0202B7A]
+     ,
+    162CEDDB7F3EDEF374CBDD8EBD674375E0202B7A,
+
+     [
+       [A351D63CD815906118C03FE4415B05D984AC4F91,
+        8CE90FCA31A09C035DF286D1F1A280E31D4A3263,
+        162CEDDB7F3EDEF374CBDD8EBD674375E0202B7A]
+       ,
+      57645DBCA85E17B0DAB46D7F2FB4A9D4F86D1400,
+      CC3B66372ED5AAD9C9060ED9E120BDA3EEB60086]
+     ,
+    CC3B66372ED5AAD9C9060ED9E120BDA3EEB60086]
+                                    Type: List(BinaryTree(HexadecimalExpansion))
+mt13 := merkle_tree_sha_1(lbits)
+ 
+
+   (17)
+   [
+     [
+       [
+         [F07F977DE683FCDB71347AF1E63FC039EF0F0074,
+          D32CFB6213027B3175E4B750A075CE76F9045AB0,
+          AD7D0CFE4CF22065EEC00AE5F9B3742A3F40C387]
+         ,
+        1C7197BC0774CE0430FD170EE03A8EDCD15A7AE8,
+
+         [F5C3F4F492F985D1D035F053FF5E725B3C647D2C,
+          77E5DC16AA7B08C43AA5A5DD3E4C9B8CF63E527D,
+          6207E607E533B76F87EE21C14F96619C4D0A592D]
+         ]
+       ,
+      3C8AE87F6B0B624B4C28A9E1DD7ACE8F90C13C8F,
+
+       [
+         [A351D63CD815906118C03FE4415B05D984AC4F91,
+          8CE90FCA31A09C035DF286D1F1A280E31D4A3263,
+          162CEDDB7F3EDEF374CBDD8EBD674375E0202B7A]
+         ,
+        9BA628756430759B028A87825217648DA1759874,
+
+         [CC3B66372ED5AAD9C9060ED9E120BDA3EEB60086,
+          39352B2494BB5AF277741B45254CE108B3C38A70,
+          EC68CC77D54C6311A45E2865B00707D364A20840]
+         ]
+       ]
+     ,
+    A49AA7D221135CF24E1E51C4FA2EC066A91B905D,
+
+     [
+       [
+         [22D0C51B72B100CB1D89962F32603FEC2C48379E,
+          F3C7C027C02415C00BC45CDF560B89D932BD7526,
+          A1D3A54273CF89D9461B467B3878DE36AFEB309D]
+         ,
+        9EA8821A842C8EE2C8F563409C2FF1A663C6D562,
+
+         [40D14D4ADC9C2F76D74DBC489A643433A9D7C022,
+          7F7BCD5362851DF16D47747A4ED610725A2E79BC,
+          9355EE62AB5EE1F70E7182763B288BF7943AEAA7]
+         ]
+       ,
+      46D30069BC48D56C473CBE5C3B4CF781CB7B98F7,
+      A3DE7E425CAB20F9A53F23B443A94CFA92DC1237]
+     ]
+                                          Type: BinaryTree(HexadecimalExpansion)
+lH13 := [sha_1 doc for doc in lbits]
+ 
+
+   (18)
+   [F07F977DE683FCDB71347AF1E63FC039EF0F0074,
+    AD7D0CFE4CF22065EEC00AE5F9B3742A3F40C387,
+    F5C3F4F492F985D1D035F053FF5E725B3C647D2C,
+    6207E607E533B76F87EE21C14F96619C4D0A592D,
+    A351D63CD815906118C03FE4415B05D984AC4F91,
+    162CEDDB7F3EDEF374CBDD8EBD674375E0202B7A,
+    CC3B66372ED5AAD9C9060ED9E120BDA3EEB60086,
+    EC68CC77D54C6311A45E2865B00707D364A20840,
+    22D0C51B72B100CB1D89962F32603FEC2C48379E,
+    A1D3A54273CF89D9461B467B3878DE36AFEB309D,
+    40D14D4ADC9C2F76D74DBC489A643433A9D7C022,
+    9355EE62AB5EE1F70E7182763B288BF7943AEAA7,
+    A3DE7E425CAB20F9A53F23B443A94CFA92DC1237]
+                                                Type: List(HexadecimalExpansion)
+d := first(lH13,7)
+ 
+
+   (19)
+   [F07F977DE683FCDB71347AF1E63FC039EF0F0074,
+    AD7D0CFE4CF22065EEC00AE5F9B3742A3F40C387,
+    F5C3F4F492F985D1D035F053FF5E725B3C647D2C,
+    6207E607E533B76F87EE21C14F96619C4D0A592D,
+    A351D63CD815906118C03FE4415B05D984AC4F91,
+    162CEDDB7F3EDEF374CBDD8EBD674375E0202B7A,
+    CC3B66372ED5AAD9C9060ED9E120BDA3EEB60086]
+                                                Type: List(HexadecimalExpansion)
+
+vAP(m) == verifyAuditProof(mt7.value, auditProof(m, first(d,7)), d.(m+1), m)
+ 
+                                                                      Type: Void
+aP5 := auditProof(4, first(d,7))
+ 
+
+   (21)
+   [162CEDDB7F3EDEF374CBDD8EBD674375E0202B7A,
+    CC3B66372ED5AAD9C9060ED9E120BDA3EEB60086,
+    1C7197BC0774CE0430FD170EE03A8EDCD15A7AE8]
+                                                Type: List(HexadecimalExpansion)
+mt7.value
+ 
+
+   (22)  553B0303CC1ACBA12A4B8F76148D28A0FA9A2719
+                                                      Type: HexadecimalExpansion
+d.6
+ 
+
+   (23)  162CEDDB7F3EDEF374CBDD8EBD674375E0202B7A
+                                                      Type: HexadecimalExpansion
+vAP 5 
+ 
+   Compiling function vAP with type PositiveInteger -> Boolean 
+   verifyAuditProof: proved that  162CEDDB7F3EDEF374CBDD8EBD674375E0202B7A
+      is in the Merkle tree with root hash
+     553B0303CC1ACBA12A4B8F76148D28A0FA9A2719
+
+   (24)  true
+                                                                   Type: Boolean
+
+[vAP(m) for m in 0..6]
+ 
+   Compiling function vAP with type NonNegativeInteger -> Boolean 
+   verifyAuditProof: proved that  F07F977DE683FCDB71347AF1E63FC039EF0F0074
+      is in the Merkle tree with root hash
+     553B0303CC1ACBA12A4B8F76148D28A0FA9A2719
+   verifyAuditProof: proved that  AD7D0CFE4CF22065EEC00AE5F9B3742A3F40C387
+      is in the Merkle tree with root hash
+     553B0303CC1ACBA12A4B8F76148D28A0FA9A2719
+   verifyAuditProof: proved that  F5C3F4F492F985D1D035F053FF5E725B3C647D2C
+      is in the Merkle tree with root hash
+     553B0303CC1ACBA12A4B8F76148D28A0FA9A2719
+   verifyAuditProof: proved that  6207E607E533B76F87EE21C14F96619C4D0A592D
+      is in the Merkle tree with root hash
+     553B0303CC1ACBA12A4B8F76148D28A0FA9A2719
+   verifyAuditProof: proved that  A351D63CD815906118C03FE4415B05D984AC4F91
+      is in the Merkle tree with root hash
+     553B0303CC1ACBA12A4B8F76148D28A0FA9A2719
+   verifyAuditProof: proved that  162CEDDB7F3EDEF374CBDD8EBD674375E0202B7A
+      is in the Merkle tree with root hash
+     553B0303CC1ACBA12A4B8F76148D28A0FA9A2719
+   verifyAuditProof: proved that  CC3B66372ED5AAD9C9060ED9E120BDA3EEB60086
+      is in the Merkle tree with root hash
+     553B0303CC1ACBA12A4B8F76148D28A0FA9A2719
+
+   (25)  [true, true, true, true, true, true, true]
+                                                             Type: List(Boolean)
+(26) -> )spool

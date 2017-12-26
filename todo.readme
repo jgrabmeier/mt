@@ -1,0 +1,7 @@
+Implement SHA-256.
+Create BinaryTreeWithParents.
+	BinaryTree does not store the parent node. Modify
+	BinaryTree to put the parent node as a further component
+	in the underlying tree domain Tree(S).
+Apply SHA-1 to binary files.
+Allow extensions of Merkle hash trees.

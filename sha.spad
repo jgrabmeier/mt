@@ -1,5 +1,6 @@
 -- Copyright (c) 2017 J. Grabmeier
 -- All rights reserved.
+-- version 3 25.12.2017 
 -- version 2 11.12.2017 
 -- version 1 03.12.2017 
 
@@ -7,22 +8,25 @@
 
 ++ Author: Johannes Grabmeier
 ++ Date Created: 2017-12-03
-++ Date Last Updated: 2017-12-11
+++ Date Last Updated: 2017-12-25
 ++ Basic Functions:
 ++ Related Constructors:
 ++ Also See:
 ++ AMS Classifications:
 ++ Keywords:
-++ References: FIPS-180-4 of NIST
+++ References: 
+++   FIPS-180-4 of NIST
+++   Laurie, B., Lanley, A., Kasper, E.: Certificate Transparency 
 ++ Description:
 ++   The package SHAPackage provides some of the SHA hash code functions.
 ++   sha_1 implements SHA-1, the hash code being a hexadecimal, leading zeros 
 ++      are missing! Can be applied both to a binary word of Bits or to
 ++      hexadecimal number.
-++   sha_1_binary implements SHA-1, the hash code being a binary word, leading 0 
+++   sha_1_binary implements SHA-1, the hash code being a binary word, leading 0's
 ++      are present.
+++   and for the moment also Merkle Trees:
 ++   merkle_tree_sha_1 computes the Merkle hash tree for a list of binary words and
-++   we provode auditProof and verifyAuditProof as functions to compute and verify
+++   we provide auditProof and verifyAuditProof as functions to compute and verify
 ++   a proof that a given hash code is the leaf hash of a binary word in the tree.
 
 SHAPackage(): public == private where
@@ -38,6 +42,14 @@ SHAPackage(): public == private where
   msg  ==> message
 
   public ==> InternalMessageLevel with
+  -----------------------------------------------------------------------------
+  -- local functions for outside testing:
+  -----------------------------------------------------------------------------
+    largestPowerOfTwo: NNI -> NNI
+      ++ largestPowerOfTwo(n) yields k = 2^\kappa such that 
+      ++ k < n <=2k
+    path: (NNI, NNI) -> List Boolean
+      ++ path(m,n) yields path for verification of consistency proof.
   -----------------------------------------------------------------------------
   -- extensions of Bits:
   -----------------------------------------------------------------------------
@@ -63,6 +75,8 @@ SHAPackage(): public == private where
       ++ one possibly being shorter.
     toHex: B  -> HexadecimalExpansion
       ++ toHex(b) interpretes b in Bits as a hexadecimal number.
+    toBits: NNI -> B
+      ++ toBits(n) interpretes n as an element of Bits.
     toBits: HexadecimalExpansion -> B
       ++ toBits(hx) interpretes hx as an element of Bits.
     lineToBits: String -> B
@@ -78,6 +92,16 @@ SHAPackage(): public == private where
       ++ addLeadingZeros(s, b) adds leading zeros, if #s < n, such the result
       ++ has n bits, otherwise it returns b.
     concat: (HX, HX) -> B
+  -----------------------------------------------------------------------------
+  -- extension of BinaryTree
+  -----------------------------------------------------------------------------
+    parentTree: (MT, MT) -> MT
+      ++ parentTree(subT, mt) computes the parent tree node of node subT in 
+      ++ the tree mt, error, if not a subtree.
+    siblingTree: (MT, MT) -> MT
+      ++ siblingTree(subT, mt) computes the sibling tree node of node subT in 
+      ++ the tree mt, error, if not a subtree. Can it happen that there is
+      ++ no sibling tree? (Do we allow this.
   -----------------------------------------------------------------------------
   -- SHA help functions
   -----------------------------------------------------------------------------
@@ -111,19 +135,51 @@ SHAPackage(): public == private where
   -----------------------------------------------------------------------------
   -- Merkle Tree Hashing
   -----------------------------------------------------------------------------
+    merkle_tree_sha_1: List HX -> MT
+      ++ merkle_tree_sha_1(lhx) computes the Merkle hash tree - i.e. the log - 
+      ++ for the given list of leaf hases lhx.
     merkle_tree_sha_1: List B -> MT
       ++ merkle_tree_sha_1(lb) computes the Merkle hash tree - i.e. the log - 
       ++ for the records of block lb.
+    auditProof: (MT, MT) -> List HXLR
+      ++ auditProof(mt, ct) returns the hashes and the info, whether it is the 
+      ++ left (true) or right (false) child of the parent node, which are 
+      ++ necessary, to prove the way from node ct in mt to the root hash.
     auditProof: (MT, HX) -> List HXLR
       ++ auditProof(mt, hx) requires hx to be the value of a leaf and returns the
       ++ hashes and the info, whether it is the left (true) or right (false) 
       ++ child of the parent node, which are necessary, to prove the way from 
       ++ hx to the root hash.
+    auditProof: (NNI, List HX) -> List HX
+      ++ auditProof(m, lhx) requires 0 <= m < n := #lhx, lhx list of
+      ++ hash codes at the n leaves. Note, that the total Merkle hash tree
+      ++ is not given, we proceed recursively by finding the largest
+      ++ complete binary subtree. Here we find the path from the root
+      ++ to the leaf.
     verifyAuditProof: (HX, List HXLR, HX) -> Boolean
       ++ verifyAuditProof(rootHash, auditProof, leafHash) uses the list of 
       ++ hashes of auditProof with left/right information and the leafHash to
       ++ verify, that rootHash is gained by the given way from the leaf to the 
       ++ root hash.
+    verifyAuditProof: (HX, List HX, HX, NNI) -> Boolean
+      ++ verifyAuditProof(rtH, aP, lfH, m) determines whether ap is a proof
+      ++ that leaf m (counting from 0) with hash code lfH is in the Merkle
+      ++ hash tree with root hash rtH. Left or right is decided by the 
+      ++ binary expansion of m (reverse order) and prolonged by leading
+      ++ false's = 0's or dropping final false's if length does not coincide
+      ++ with that of lfH.
+    verifyConsistencyProof: (NNI, NNI, HX, HX, List HX) -> Boolean
+    consistencyProofClifton: (NNI, MT) -> List HX
+      ++ consistancyProof(m, mt) returns a list of hash codes which enables
+      ++ one to prove that the previous hash tree with the first m leaves
+      ++ is still a subtree of mt, counting starts with 0, but the smallest
+      ++ value for m is 1.
+    consistencyProof': (NNI, List HX, Boolean) ->  List HX
+      ++ should become local
+    consistencyProof: (NNI, List HX) -> List HX
+      ++ consistancyProofNew(nl, mt) returns a list of hash codes which enables
+      ++ one to prove that the previous hash tree with the first nl leaves
+      ++ is still a subtree of the Merkle hash tree of mt.
 
   private ==> add
     import OF
@@ -153,6 +209,38 @@ SHAPackage(): public == private where
 	[1,1,0,0,  1,0,1,0, 0,1,1,0, 0,0,1,0, 1,1,0,0, 0,0,0,1, 1,1,0,1, 0,1,1,0]::List I ::B _
     ]
     endOfLine : B := [0,0,0,0, 1,0,1,0] :: List I :: B
+
+    largestPowerOfTwo(n: NNI): NNI == 
+      bts : Bits := n :: Bits         -- e.g   bts = 10110
+      bts' : Bits := new(#bts, false) -- then bts' = 00000
+      qsetelt!(bts',1,true)           --      bts' = 10000
+      k : NNI := bts' :: NNI
+      if k=n then k := k quo 2 -- k is largest power of 2 such that k < n <= 2k
+      k	
+    path(m: NNI, n: NNI): List Boolean == 
+      lb : List Boolean := []
+      m = n => lb
+      d : NNI := #(n :: Bits)
+      if mLP 1 then print blankSeparate [msg "  depth = ", d :: OF]
+      lb := entries((m-1)  :: NNI :: Bits)
+      if mLP 1 then print blankSeparate [msg "  lb = ", lb :: OF]
+      df : NNI := (d - #lb) :: NNI
+      if mLP 1 then print blankSeparate [msg "  diff  = ", df :: OF]
+      lb := concat( new(df, false), lb)
+      if mLP 1 then print blankSeparate [msg "  lb = ", lb :: OF]
+      lb := reverse lb
+      if mLP 1 then print blankSeparate [msg "  lb = ", lb :: OF]
+      for b in lb repeat
+        if b then lb := rest lb
+        else break
+      lb
+
+      --if (m = 1) or even? m then
+      ---- if #lb < #cP then lb then fill with leading 'false' to get equality
+      ---- if #lb < #cP then lb then drop the last 'false' to get equality
+      --  if diff < 0 then lb := concat(new( (-diff) :: NNI, false), lb)
+      --  if diff > 0 then lb := first(lb, #cP :: NNI)
+      --lb := reverse lb
   -----------------------------------------------------------------------------
   -- global functions
   -----------------------------------------------------------------------------
@@ -189,6 +277,7 @@ SHAPackage(): public == private where
       ln : List I := wholeRagits(n :: I :: RadixExpansion 2)
       lb : List Boolean := [(x=1)::Boolean for x in ln]
       lb :: B
+    toBits(n: NNI): Bits == n :: B
     toBits(hx: HX): Bits == wholePart(hx) :: NNI :: Bits
     toHex(b: B): HexadecimalExpansion == b :: Integer :: HexadecimalExpansion
     concat(hxl: HX, hxr: HX): B ==
@@ -216,6 +305,22 @@ SHAPackage(): public == private where
 	  lB := concat(lB,  eB :: B)  
 	  eB := []
       lB
+  -----------------------------------------------------------------------------
+  -- extension of BinaryTree
+  -----------------------------------------------------------------------------
+    parentTree(subTr: MT, mt: MT): MT == 
+      for nd in nodes mt repeat
+	(nd.left = subTr) => return nd
+	(nd.right = subTr) => return nd
+      error "parentTree: first argument is not a subtree of second argument"
+    siblingTree(subTr: MT, mt: MT): MT == 
+      for nd in nodes mt repeat
+	(nd.left = subTr) => return nd.right
+	(nd.right = subTr) => return nd.left
+      error "siblingTree: first argument is not a subtree of second argument"
+  -----------------------------------------------------------------------------
+  -- SHA-1
+  -----------------------------------------------------------------------------
     sha_1_binary(m: B): B ==
        H : List B := initialHashValuesSHA_1()
        M : List B := split(shaPadding512 m, 512)
@@ -276,8 +381,7 @@ SHAPackage(): public == private where
   -----------------------------------------------------------------------------
   -- Merkle Tree Hashing
   -----------------------------------------------------------------------------
-    merkle_tree_sha_1(lb: List B): MT ==  
-      lh : List HX := [sha_1(b) for b in lb]
+    merkle_tree_internal(lh: List HX): MT ==  
       if mLP 2 then print blankSeparate [msg "lh= ", lh :: OF]
       lmt : List MT := [binaryTree(hx) for hx in lh]
       if mLP 2 then print blankSeparate [msg "lmt= ", lmt :: OF]
@@ -298,9 +402,35 @@ SHAPackage(): public == private where
         if not empty? lmt' then lmt := concat(lmt, first lmt')
         if mLP 2 then print blankSeparate [msg "lmt= ", lmt :: OF]
       first lmt
+    merkle_tree_sha_1(lh: List HX): MT ==  
+      merkle_tree_internal lh
+    merkle_tree_sha_1(lb: List B): MT ==  
+      empty? lb => binaryTree sha_1 toBits 0
+      lh : List HX := [sha_1(b) for b in lb]
+      merkle_tree_internal lh
+    auditProof(m: NNI, lhx: List HX): List HX == 
+      n : NNI := #lhx
+      if mLP 2 then print blankSeparate [msg "  auditProof' called with m = ", m :: OF, msg "and n = ", n::OF]
+      m >= n => error "auditProof: first argument must be smaller than the length of the second argument!"
+      lpr : List HX := []
+      hx : HX := 0
+      m = 0 and n = 1 => lpr
+      k : NNI := largestPowerOfTwo n
+      if mLP 1 then print blankSeparate [msg "  and we have k = ", k :: OF]
+      nk : NNI := (n-k) :: NNI
+      if m < k then
+        hx := merkle_tree_sha_1(last(lhx, (n-k)::NNI)).value
+	lpr := concat(concat(auditProof(m, first(lhx, k)), hx), lpr)
+      else -- m >= k
+        hx := merkle_tree_sha_1(first(lhx, k)).value
+        lpr := concat(concat(auditProof((m-k)::NNI, last(lhx, (n-k)::NNI)), hx), lpr)
+      if mLP 1 then print blankSeparate [msg "  => next proof hash value = ", hx :: OF]
+      lpr
     auditProof(mt: MT, lf: HX): List HXLR == 
-      if mLP 2 then print blankSeparate [msg "start auditProof"]
       ct : MT := binaryTree lf
+      auditProof(mt,  ct)
+    auditProof(mt: MT, ct: MT): List HXLR == 
+      if mLP 2 then print blankSeparate [msg "start auditProof"]
       pt : MT 
       lhx : List HXLR := []
       lnd : List MT := nodes mt 
@@ -325,6 +455,7 @@ SHAPackage(): public == private where
 	    break
 	rootFound? := not found?
       lhx
+
     verifyAuditProof(rtH: HX, aP: List HXLR, lfH: HX): Boolean ==
       hx : HX := lfH
       for rHXLR in aP repeat
@@ -336,4 +467,155 @@ SHAPackage(): public == private where
       else
         print blankSeparate [msg "verifyAuditProof: second argument is not a proof that  ", lfH :: OF, msg " is in the Merkle tree with root hash ", rtH :: OF]
       hx = rtH 
-)fin
+
+    verifyAuditProof(rtH: HX, aP: List HX, lfH: HX, m: NNI): Boolean ==
+      hx : HX := lfH
+      lb : List Boolean := entries(m :: Bits)
+      -- if #lb < #aP then lb then fill with leading 'false' to get equality
+      -- if #lb < #aP then lb then drop the last 'false' to get equality
+      diff : Integer := #lb - #aP
+      if diff < 0 then lb := concat(new( (-diff) :: NNI, false), lb)
+      if diff > 0 then lb := first(lb, #aP)
+      lb := reverse lb
+      for hxP in aP for b in lb repeat
+	if b
+	  then hx := sha_1 concat(hxP, hx)
+          else hx := sha_1 concat(hx, hxP)
+      if hx = rtH then
+        print blankSeparate [msg "verifyAuditProof: proved that ", lfH :: OF, msg " is in the Merkle tree with root hash ", rtH :: OF]
+      else
+        print blankSeparate [msg "verifyAuditProof: second argument is not a proof that  ", lfH :: OF, msg " is in the Merkle tree with root hash ", rtH :: OF]
+      hx = rtH 
+   
+
+    consistencyProof'(m: NNI, llv: List HX, b: Boolean): List HX == 
+      n : NNI := #llv
+      if mLP 1 then print blankSeparate [msg "  consistencyProof' called with m = ", m :: OF, msg "and n = ", #llv::OF, msg " and b = ", b::OF]
+      n = m and b => 
+        if mLP 1 then print blankSeparate [msg "  => no further hash value"]
+        []
+      n = m and not b => 
+        if mLP 1 then print blankSeparate [msg "  => proof hash value = ", merkle_tree_sha_1(llv).value :: OF]
+        [merkle_tree_sha_1(llv).value]
+      lpr : List HX := []
+      m >= n => error "consistencyProof': first argument must be smaller that the length of the second argument"
+      k : NNI := largestPowerOfTwo n
+      if mLP 1 then print blankSeparate [msg "        and we have k = ", k :: OF]
+      nk : NNI := (n-k) :: NNI
+      if m <= k then
+        if mLP 1 then print blankSeparate [msg "  => proof hash value = ", merkle_tree_sha_1(last(llv, (n-k)::NNI)).value :: OF]
+	lpr := concat(concat(consistencyProof'(m, first(llv, k), b), merkle_tree_sha_1(last(llv, (n-k)::NNI)).value ), lpr)
+      else -- m > k
+        if mLP 1 then print blankSeparate [msg "  => proof hash value = ", merkle_tree_sha_1(first(llv, k)).value :: OF]
+        lpr := concat(concat(consistencyProof'((m-k)::NNI, last(llv, (n-k)::NNI), false), merkle_tree_sha_1(first(llv, k)).value ), lpr)
+      lpr
+
+    consistencyProof(m: NNI, llv: List HX): List HX == 
+      m = 0 => error "consistencyProof: first argument must be >= 1"
+      consistencyProof'(m, llv, true)
+
+    verifyConsistencyProof(m: NNI, n: NNI, r': HX, r: HX, cP: List HX): Boolean == 
+      empty? cP => (m=n) and (r=r') 
+      lb : List Boolean := path(m, n)
+      if mLP 1 then print blankSeparate [msg "  lb = ", lb :: OF]
+      hx : HX := 0 
+      hx' : HX := 0 
+      if reduce("\/", lb) then 
+        hx := first cP
+        hx':= first cP
+	cP := rest cP
+      else 
+	hx := r'
+	hx' := r'
+      if mLP 1 then print blankSeparate [msg "  actual r = ", hx::OF]
+      if mLP 1 then print blankSeparate [msg "  actual r' = ", hx'::OF]
+      path : List Integer := []
+      for hxP in cP for b in lb repeat
+        hxsave : HX := hx
+        hxsave' : HX := hx'
+	if b
+	  then 
+		path := concat(path, 1)
+		if mLP 1 then print blankSeparate [msg "  path = ", path :: OF]
+		hx := sha_1 concat(hxP, hx)
+		if mLP 1 then print blankSeparate [msg "  actual r = h(", hxP::OF, msg "+", hxsave::OF, msg ") = ", hx::OF]
+		hx' := sha_1 concat(hxP, hx')
+		if mLP 1 then print blankSeparate [msg "  actual r' = h(", hxP::OF, msg "+", hxsave'::OF, msg ") = ", hx'::OF]
+          else 
+		path := concat(path, 0)
+		if mLP 1 then print blankSeparate [msg "  path = ", path :: OF]
+		hx := sha_1 concat(hx, hxP)
+		if mLP 1 then print blankSeparate [msg "  actual r = h(", hxsave::OF, msg "+", hxP::OF, msg ") = ", hx::OF]
+      if hx' = r' then
+        print blankSeparate [msg "verifyAuditProof: proved that earlier Merkle tree for leaves 0..", (m-1) :: OF, msg " with computed root hash ", hx' :: OF, msg " is a subtree of actual Merkle tree with root hash ", r :: OF]
+      else
+        print blankSeparate [msg "verifyAuditProof: last argument is not a proof that earlier Merkle for leaves 0..", (m-1) :: OF, msg "with root hash ", r' :: OF, msg " is a subtree of actual Merkle tree with root hash ", r :: OF]
+      if hx = r then
+        print blankSeparate [msg "verifyAuditProof: proved that root hash computed from the proof sequence coincides with given root hash of actual Merkle tree"]
+      else
+        print blankSeparate [msg "verifyAuditProof: from last argument computed hash does not coincide with the one computed from the proof sequence coincides"]
+      (hx' = r') and (hx = r)
+
+    consistencyProofClifton(m: NNI, mt: MT): List HX ==
+      m = 0 => error "consistencyProofClifton: first argument must be >= 1"
+      lh : List HX := []
+      nodesMt : List MT := nodes mt
+      -- distance counts from root to leave from 0..md
+      depths  : List Integer := [distance(mt, nd) for nd in nodesMt]
+      md : NNI := reduce(max, depths) :: NNI	
+      if mLP 2 then 
+	print dashLine
+	print blankSeparate [msg "  number of leaves of subtree is ", (m+1) :: OF]
+	print dashLine
+      -- counting from 0..md from leaf to root:
+      log2m : NNI := (#(m :: Bits)-1) :: NNI
+      -- distance count level for log2m = md+1-log2m 
+      nd : MT := nodesMt.(position((md-log2m)::NNI, depths)) -- leftmost node in level log2m
+      if mLP 2 then print blankSeparate [msg "  actual node tree is ", nd :: OF]
+      -- number of leaves of this node
+      k : NNI := #leaves(nd)
+      lh := concat(lh, nd.value)
+      if mLP 2 then print blankSeparate [msg "  ==> proof hash added, namely ", nd.value :: OF]
+      if mLP 1 then print blankSeparate [msg "  ==> proof hash ", nd.value :: OF, msg "added for ", k::OF, msg " of ", m :: OF, msg "leaves."]
+      rule2Finished : Boolean := false
+      i : I := 0
+      lastHashsSibling: MT 
+      if m = k then  -- rule 1
+        if mLP 1 then print blankSeparate [msg " Fall m=", m :: OF, msg " = k=", k::OF]
+        rule2Finished := true
+        lastHashsSibling := siblingTree(nd, mt)
+      else -- rule 2
+        if mLP 1 then 
+	    	print equalLine()
+		print blankSeparate [msg " Rule 2: Fall m ", m :: OF, msg " ~= k ", k::OF]
+  	siblingNode : MT := siblingTree(nd, mt)
+	if mLP 1 then print blankSeparate [msg "       sibling node = ", siblingNode :: OF]
+        while not rule2Finished repeat
+          if mLP 1 then 
+	    print dottedLine()
+	    print blankSeparate [msg "    while loop next step"]
+  	  sk : NNI := #leaves(siblingNode)
+          if mLP 2 then 
+	    print blankSeparate [msg "       number of leaves of siblingNode is ", sk :: OF]
+	    print blankSeparate [msg "       m-k =  ", (m-k) :: OF]
+          if (m-k) = sk then 
+  	    lh := concat(lh, siblingNode.value)
+            lastHashsSibling := siblingTree(siblingNode, mt)
+            if mLP 2 then print blankSeparate [msg "  ==> proof hash added, namely ", siblingNode.value :: OF]
+            if mLP 1 then print blankSeparate [msg "  ==> proof hash ", siblingNode.value :: OF, msg "added for the remaining ", (m-k)::OF, msg " leaves."]
+  	    rule2Finished := true
+          else 
+            if (m+1-k) > sk then
+  	      lh := concat(lh, siblingNode.value)
+              if mLP 2 then print blankSeparate [msg "  ==> proof hash added, namely ", siblingNode.value :: OF]
+              if mLP 1 then print blankSeparate [msg "  ==> proof hash ", siblingNode.value :: OF, msg "added for further ", sk::OF, msg "leaves."]
+  	      k := k + sk
+  	      siblingNode := parentTree(siblingNode, mt).right
+  	    else
+  	      siblingNode := siblingNode.left
+      -- rule 3:
+      -- audit proof for last nodes sibling
+      if mLP 1 then print blankSeparate [msg "  now we do an audit proof of last nodes sibling ", lastHashsSibling::OF]
+      lh :=  concat(lh, lastHashsSibling.value)
+      lh :=  concat(lh, [hsrl.hash for hsrl in rest auditProof(mt, lastHashsSibling) ] ) 
+      lh

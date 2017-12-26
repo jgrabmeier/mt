@@ -1,0 +1,263 @@
+
+(1) -> )r consistencyProofs
+)lib IML IML- SHAPKG
+ 
+   InternalMessageLevel is already explicitly exposed in frame frame1 
+   InternalMessageLevel will be automatically loaded when needed from /Users/jgrabmeier/arbeiten/merkleTree/fricas/IML.NRLIB/IML
+   InternalMessageLevel& is already explicitly exposed in frame frame1 
+   InternalMessageLevel& will be automatically loaded when needed from /Users/jgrabmeier/arbeiten/merkleTree/fricas/IML-.NRLIB/IML-
+   SHAPackage is already explicitly exposed in frame frame1 
+   SHAPackage will be automatically loaded when needed from /Users/jgrabmeier/arbeiten/merkleTree/fricas/SHAPKG.NRLIB/SHAPKG
+-- Consistency Proofs for Merkle Hash Tree
+HX := HexadecimalExpansion
+ 
+
+   (1)  HexadecimalExpansion
+                                                                                                                                  Type: Type
+MT := BinaryTree HX
+ 
+
+   (2)  BinaryTree(HexadecimalExpansion)
+                                                                                                                                  Type: Type
+
+lnni := [(70293475092348750239478502934875^i)::NNI for i in 1..13];
+ 
+
+                                                                                                              Type: List(NonNegativeInteger)
+lbits := [shaPadding512 toBits u for u in lnni];
+ 
+
+                                                                                                                            Type: List(Bits)
+mt13 := merkle_tree_sha_1(lbits)
+ 
+
+   (5)
+   [
+     [
+       [[F07F977DE683FCDB71347AF1E63FC039EF0F0074, D32CFB6213027B3175E4B750A075CE76F9045AB0, AD7D0CFE4CF22065EEC00AE5F9B3742A3F40C387],
+        1C7197BC0774CE0430FD170EE03A8EDCD15A7AE8,
+        [F5C3F4F492F985D1D035F053FF5E725B3C647D2C, 77E5DC16AA7B08C43AA5A5DD3E4C9B8CF63E527D, 6207E607E533B76F87EE21C14F96619C4D0A592D]]
+       ,
+      3C8AE87F6B0B624B4C28A9E1DD7ACE8F90C13C8F,
+
+       [[A351D63CD815906118C03FE4415B05D984AC4F91, 8CE90FCA31A09C035DF286D1F1A280E31D4A3263, 162CEDDB7F3EDEF374CBDD8EBD674375E0202B7A],
+        9BA628756430759B028A87825217648DA1759874,
+        [CC3B66372ED5AAD9C9060ED9E120BDA3EEB60086, 39352B2494BB5AF277741B45254CE108B3C38A70, EC68CC77D54C6311A45E2865B00707D364A20840]]
+       ]
+     ,
+    A49AA7D221135CF24E1E51C4FA2EC066A91B905D,
+
+     [
+       [[22D0C51B72B100CB1D89962F32603FEC2C48379E, F3C7C027C02415C00BC45CDF560B89D932BD7526, A1D3A54273CF89D9461B467B3878DE36AFEB309D],
+        9EA8821A842C8EE2C8F563409C2FF1A663C6D562,
+        [40D14D4ADC9C2F76D74DBC489A643433A9D7C022, 7F7BCD5362851DF16D47747A4ED610725A2E79BC, 9355EE62AB5EE1F70E7182763B288BF7943AEAA7]]
+       ,
+      46D30069BC48D56C473CBE5C3B4CF781CB7B98F7, A3DE7E425CAB20F9A53F23B443A94CFA92DC1237]
+     ]
+                                                                                                      Type: BinaryTree(HexadecimalExpansion)
+d := [sha_1 doc for doc in lbits]
+ 
+
+   (6)
+   [F07F977DE683FCDB71347AF1E63FC039EF0F0074, AD7D0CFE4CF22065EEC00AE5F9B3742A3F40C387, F5C3F4F492F985D1D035F053FF5E725B3C647D2C,
+    6207E607E533B76F87EE21C14F96619C4D0A592D, A351D63CD815906118C03FE4415B05D984AC4F91, 162CEDDB7F3EDEF374CBDD8EBD674375E0202B7A,
+    CC3B66372ED5AAD9C9060ED9E120BDA3EEB60086, EC68CC77D54C6311A45E2865B00707D364A20840, 22D0C51B72B100CB1D89962F32603FEC2C48379E,
+    A1D3A54273CF89D9461B467B3878DE36AFEB309D, 40D14D4ADC9C2F76D74DBC489A643433A9D7C022, 9355EE62AB5EE1F70E7182763B288BF7943AEAA7,
+    A3DE7E425CAB20F9A53F23B443A94CFA92DC1237]
+                                                                                                            Type: List(HexadecimalExpansion)
+-- compute the root hashes for the growth of the Merkle tree from 1..13:
+lth := [merkle_tree_sha_1(first(lbits,m)).value for m in 1..13]
+ 
+
+   (7)
+   [F07F977DE683FCDB71347AF1E63FC039EF0F0074, D32CFB6213027B3175E4B750A075CE76F9045AB0, A39374D15073FDCE46BC194D4A31B5915FE4F68E,
+    1C7197BC0774CE0430FD170EE03A8EDCD15A7AE8, BED415853F83BC20C1BBF786D1B7D05F13A34395, C4708D80B0B3CCFFD918C2FB211612B1962A1738,
+    553B0303CC1ACBA12A4B8F76148D28A0FA9A2719, 3C8AE87F6B0B624B4C28A9E1DD7ACE8F90C13C8F, 26789BE07864434CFBD4DB2CF495038C9FBF3E50,
+    3BC54C134F738592B4B9333D4FE9795250226121, 72928D266D11C1444FE47AF6A6DFBA68615AB1AD, 73DA872A877ECA9E2B2620D526B20A026E9424F8,
+    A49AA7D221135CF24E1E51C4FA2EC066A91B905D]
+                                                                                                            Type: List(HexadecimalExpansion)
+-- for m = 4
+cP4 := consistencyProof(4,d)
+ 
+
+   (8)  [9BA628756430759B028A87825217648DA1759874, 46D30069BC48D56C473CBE5C3B4CF781CB7B98F7]
+                                                                                                            Type: List(HexadecimalExpansion)
+setMessageLevel(1)$SHAPKG
+ 
+
+   (9)  1
+                                                                                                                    Type: NonNegativeInteger
+verifyConsistencyProof(4, 13, lth.4, mt13.value, cP4)
+ 
+     depth =  4
+     lb =  [true, true]
+     diff  =  2
+     lb =  [false, false, true, true]
+     lb =  [true, true, false, false]
+     lb =  [false, false]
+     actual r =  1C7197BC0774CE0430FD170EE03A8EDCD15A7AE8
+     actual r' =  1C7197BC0774CE0430FD170EE03A8EDCD15A7AE8
+     path =  [0]
+     actual r = h( 1C7197BC0774CE0430FD170EE03A8EDCD15A7AE8 + 9BA628756430759B028A87825217648DA1759874 ) =
+     3C8AE87F6B0B624B4C28A9E1DD7ACE8F90C13C8F
+     path =  [0, 0]
+     actual r = h( 3C8AE87F6B0B624B4C28A9E1DD7ACE8F90C13C8F + 46D30069BC48D56C473CBE5C3B4CF781CB7B98F7 ) =
+     A49AA7D221135CF24E1E51C4FA2EC066A91B905D
+   verifyAuditProof: proved that earlier Merkle tree for leaves 0.. 3  with computed root hash  1C7197BC0774CE0430FD170EE03A8EDCD15A7AE8
+      is a subtree of actual Merkle tree with root hash  A49AA7D221135CF24E1E51C4FA2EC066A91B905D
+   verifyAuditProof: proved that root hash computed from the proof sequence coincides with given root hash of actual Merkle tree
+
+   (10)  true
+                                                                                                                               Type: Boolean
+setMessageLevel(0)$SHAPKG
+ 
+
+   (11)  0
+                                                                                                                    Type: NonNegativeInteger
+3::Bits
+ 
+
+   (12)  "11"
+                                                                                                                                  Type: Bits
+-- for m = 7
+mt7 := merkle_tree_sha_1(first(lbits,7))
+ 
+
+   (13)
+   [
+     [[F07F977DE683FCDB71347AF1E63FC039EF0F0074, D32CFB6213027B3175E4B750A075CE76F9045AB0, AD7D0CFE4CF22065EEC00AE5F9B3742A3F40C387],
+      1C7197BC0774CE0430FD170EE03A8EDCD15A7AE8,
+      [F5C3F4F492F985D1D035F053FF5E725B3C647D2C, 77E5DC16AA7B08C43AA5A5DD3E4C9B8CF63E527D, 6207E607E533B76F87EE21C14F96619C4D0A592D]]
+     ,
+    553B0303CC1ACBA12A4B8F76148D28A0FA9A2719,
+
+     [[A351D63CD815906118C03FE4415B05D984AC4F91, 8CE90FCA31A09C035DF286D1F1A280E31D4A3263, 162CEDDB7F3EDEF374CBDD8EBD674375E0202B7A],
+      57645DBCA85E17B0DAB46D7F2FB4A9D4F86D1400, CC3B66372ED5AAD9C9060ED9E120BDA3EEB60086]
+     ]
+                                                                                                      Type: BinaryTree(HexadecimalExpansion)
+cP7 := consistencyProof(7,d)
+ 
+
+   (14)
+   [CC3B66372ED5AAD9C9060ED9E120BDA3EEB60086, EC68CC77D54C6311A45E2865B00707D364A20840, 8CE90FCA31A09C035DF286D1F1A280E31D4A3263,
+    1C7197BC0774CE0430FD170EE03A8EDCD15A7AE8, 46D30069BC48D56C473CBE5C3B4CF781CB7B98F7]
+                                                                                                            Type: List(HexadecimalExpansion)
+setMessageLevel(1)$SHAPKG
+ 
+
+   (15)  1
+                                                                                                                    Type: NonNegativeInteger
+verifyConsistencyProof(7, 13, lth.7, mt13.value, cP7)
+ 
+     depth =  4
+     lb =  [true, true, false]
+     diff  =  1
+     lb =  [false, true, true, false]
+     lb =  [false, true, true, false]
+     lb =  [false, true, true, false]
+     actual r =  CC3B66372ED5AAD9C9060ED9E120BDA3EEB60086
+     actual r' =  CC3B66372ED5AAD9C9060ED9E120BDA3EEB60086
+     path =  [0]
+     actual r = h( CC3B66372ED5AAD9C9060ED9E120BDA3EEB60086 + EC68CC77D54C6311A45E2865B00707D364A20840 ) =
+     39352B2494BB5AF277741B45254CE108B3C38A70
+     path =  [0, 1]
+     actual r = h( 8CE90FCA31A09C035DF286D1F1A280E31D4A3263 + 39352B2494BB5AF277741B45254CE108B3C38A70 ) =
+     9BA628756430759B028A87825217648DA1759874
+     actual r' = h( 8CE90FCA31A09C035DF286D1F1A280E31D4A3263 + CC3B66372ED5AAD9C9060ED9E120BDA3EEB60086 ) =
+     57645DBCA85E17B0DAB46D7F2FB4A9D4F86D1400
+     path =  [0, 1, 1]
+     actual r = h( 1C7197BC0774CE0430FD170EE03A8EDCD15A7AE8 + 9BA628756430759B028A87825217648DA1759874 ) =
+     3C8AE87F6B0B624B4C28A9E1DD7ACE8F90C13C8F
+     actual r' = h( 1C7197BC0774CE0430FD170EE03A8EDCD15A7AE8 + 57645DBCA85E17B0DAB46D7F2FB4A9D4F86D1400 ) =
+     553B0303CC1ACBA12A4B8F76148D28A0FA9A2719
+     path =  [0, 1, 1, 0]
+     actual r = h( 3C8AE87F6B0B624B4C28A9E1DD7ACE8F90C13C8F + 46D30069BC48D56C473CBE5C3B4CF781CB7B98F7 ) =
+     A49AA7D221135CF24E1E51C4FA2EC066A91B905D
+   verifyAuditProof: proved that earlier Merkle tree for leaves 0.. 6  with computed root hash  553B0303CC1ACBA12A4B8F76148D28A0FA9A2719
+      is a subtree of actual Merkle tree with root hash  A49AA7D221135CF24E1E51C4FA2EC066A91B905D
+   verifyAuditProof: proved that root hash computed from the proof sequence coincides with given root hash of actual Merkle tree
+
+   (16)  true
+                                                                                                                               Type: Boolean
+setMessageLevel(0)$SHAPKG
+ 
+
+   (17)  0
+                                                                                                                    Type: NonNegativeInteger
+6::Bits
+ 
+
+   (18)  "110"
+                                                                                                                                  Type: Bits
+-- and for allP m for m in 1..13]
+vCP(m) == (cP := consistencyProof(m,d); print cP; verifyConsistencyProof(m, 13, lth.m, mt13.value, cP))
+ 
+                                                                                                                                  Type: Void
+)set output length 140
+ 
+[vCP m for m in 1..13]
+ 
+   Compiling function vCP with type PositiveInteger -> Boolean 
+   [AD7D0CFE4CF22065EEC00AE5F9B3742A3F40C387, 77E5DC16AA7B08C43AA5A5DD3E4C9B8CF63E527D, 9BA628756430759B028A87825217648DA1759874,
+    46D30069BC48D56C473CBE5C3B4CF781CB7B98F7]
+   verifyAuditProof: proved that earlier Merkle tree for leaves 0.. 0  with computed root hash  F07F977DE683FCDB71347AF1E63FC039EF0F0074
+      is a subtree of actual Merkle tree with root hash  A49AA7D221135CF24E1E51C4FA2EC066A91B905D
+   verifyAuditProof: proved that root hash computed from the proof sequence coincides with given root hash of actual Merkle tree
+   [77E5DC16AA7B08C43AA5A5DD3E4C9B8CF63E527D, 9BA628756430759B028A87825217648DA1759874, 46D30069BC48D56C473CBE5C3B4CF781CB7B98F7]
+   verifyAuditProof: proved that earlier Merkle tree for leaves 0.. 1  with computed root hash  D32CFB6213027B3175E4B750A075CE76F9045AB0
+      is a subtree of actual Merkle tree with root hash  A49AA7D221135CF24E1E51C4FA2EC066A91B905D
+   verifyAuditProof: proved that root hash computed from the proof sequence coincides with given root hash of actual Merkle tree
+   [F5C3F4F492F985D1D035F053FF5E725B3C647D2C, 6207E607E533B76F87EE21C14F96619C4D0A592D, D32CFB6213027B3175E4B750A075CE76F9045AB0,
+    9BA628756430759B028A87825217648DA1759874, 46D30069BC48D56C473CBE5C3B4CF781CB7B98F7]
+   verifyAuditProof: proved that earlier Merkle tree for leaves 0.. 2  with computed root hash  A39374D15073FDCE46BC194D4A31B5915FE4F68E
+      is a subtree of actual Merkle tree with root hash  A49AA7D221135CF24E1E51C4FA2EC066A91B905D
+   verifyAuditProof: proved that root hash computed from the proof sequence coincides with given root hash of actual Merkle tree
+   [9BA628756430759B028A87825217648DA1759874, 46D30069BC48D56C473CBE5C3B4CF781CB7B98F7]
+   verifyAuditProof: proved that earlier Merkle tree for leaves 0.. 3  with computed root hash  1C7197BC0774CE0430FD170EE03A8EDCD15A7AE8
+      is a subtree of actual Merkle tree with root hash  A49AA7D221135CF24E1E51C4FA2EC066A91B905D
+   verifyAuditProof: proved that root hash computed from the proof sequence coincides with given root hash of actual Merkle tree
+   [A351D63CD815906118C03FE4415B05D984AC4F91, 162CEDDB7F3EDEF374CBDD8EBD674375E0202B7A, 39352B2494BB5AF277741B45254CE108B3C38A70,
+    1C7197BC0774CE0430FD170EE03A8EDCD15A7AE8, 46D30069BC48D56C473CBE5C3B4CF781CB7B98F7]
+   verifyAuditProof: proved that earlier Merkle tree for leaves 0.. 4  with computed root hash  BED415853F83BC20C1BBF786D1B7D05F13A34395
+      is a subtree of actual Merkle tree with root hash  A49AA7D221135CF24E1E51C4FA2EC066A91B905D
+   verifyAuditProof: proved that root hash computed from the proof sequence coincides with given root hash of actual Merkle tree
+   [8CE90FCA31A09C035DF286D1F1A280E31D4A3263, 39352B2494BB5AF277741B45254CE108B3C38A70, 1C7197BC0774CE0430FD170EE03A8EDCD15A7AE8,
+    46D30069BC48D56C473CBE5C3B4CF781CB7B98F7]
+   verifyAuditProof: proved that earlier Merkle tree for leaves 0.. 5  with computed root hash  C4708D80B0B3CCFFD918C2FB211612B1962A1738
+      is a subtree of actual Merkle tree with root hash  A49AA7D221135CF24E1E51C4FA2EC066A91B905D
+   verifyAuditProof: proved that root hash computed from the proof sequence coincides with given root hash of actual Merkle tree
+   [CC3B66372ED5AAD9C9060ED9E120BDA3EEB60086, EC68CC77D54C6311A45E2865B00707D364A20840, 8CE90FCA31A09C035DF286D1F1A280E31D4A3263,
+    1C7197BC0774CE0430FD170EE03A8EDCD15A7AE8, 46D30069BC48D56C473CBE5C3B4CF781CB7B98F7]
+   verifyAuditProof: proved that earlier Merkle tree for leaves 0.. 6  with computed root hash  553B0303CC1ACBA12A4B8F76148D28A0FA9A2719
+      is a subtree of actual Merkle tree with root hash  A49AA7D221135CF24E1E51C4FA2EC066A91B905D
+   verifyAuditProof: proved that root hash computed from the proof sequence coincides with given root hash of actual Merkle tree
+   [46D30069BC48D56C473CBE5C3B4CF781CB7B98F7]
+   verifyAuditProof: proved that earlier Merkle tree for leaves 0.. 7  with computed root hash  3C8AE87F6B0B624B4C28A9E1DD7ACE8F90C13C8F
+      is a subtree of actual Merkle tree with root hash  A49AA7D221135CF24E1E51C4FA2EC066A91B905D
+   verifyAuditProof: proved that root hash computed from the proof sequence coincides with given root hash of actual Merkle tree
+   [22D0C51B72B100CB1D89962F32603FEC2C48379E, A1D3A54273CF89D9461B467B3878DE36AFEB309D, 7F7BCD5362851DF16D47747A4ED610725A2E79BC,
+    A3DE7E425CAB20F9A53F23B443A94CFA92DC1237, 3C8AE87F6B0B624B4C28A9E1DD7ACE8F90C13C8F]
+   verifyAuditProof: proved that earlier Merkle tree for leaves 0.. 8  with computed root hash  26789BE07864434CFBD4DB2CF495038C9FBF3E50
+      is a subtree of actual Merkle tree with root hash  A49AA7D221135CF24E1E51C4FA2EC066A91B905D
+   verifyAuditProof: proved that root hash computed from the proof sequence coincides with given root hash of actual Merkle tree
+   [F3C7C027C02415C00BC45CDF560B89D932BD7526, 7F7BCD5362851DF16D47747A4ED610725A2E79BC, A3DE7E425CAB20F9A53F23B443A94CFA92DC1237,
+    3C8AE87F6B0B624B4C28A9E1DD7ACE8F90C13C8F]
+   verifyAuditProof: proved that earlier Merkle tree for leaves 0.. 9  with computed root hash  3BC54C134F738592B4B9333D4FE9795250226121
+      is a subtree of actual Merkle tree with root hash  A49AA7D221135CF24E1E51C4FA2EC066A91B905D
+   verifyAuditProof: proved that root hash computed from the proof sequence coincides with given root hash of actual Merkle tree
+   [40D14D4ADC9C2F76D74DBC489A643433A9D7C022, 9355EE62AB5EE1F70E7182763B288BF7943AEAA7, F3C7C027C02415C00BC45CDF560B89D932BD7526,
+    A3DE7E425CAB20F9A53F23B443A94CFA92DC1237, 3C8AE87F6B0B624B4C28A9E1DD7ACE8F90C13C8F]
+   verifyAuditProof: proved that earlier Merkle tree for leaves 0.. 10  with computed root hash  72928D266D11C1444FE47AF6A6DFBA68615AB1AD
+      is a subtree of actual Merkle tree with root hash  A49AA7D221135CF24E1E51C4FA2EC066A91B905D
+   verifyAuditProof: proved that root hash computed from the proof sequence coincides with given root hash of actual Merkle tree
+   [9EA8821A842C8EE2C8F563409C2FF1A663C6D562, A3DE7E425CAB20F9A53F23B443A94CFA92DC1237, 3C8AE87F6B0B624B4C28A9E1DD7ACE8F90C13C8F]
+   verifyAuditProof: proved that earlier Merkle tree for leaves 0.. 11  with computed root hash  73DA872A877ECA9E2B2620D526B20A026E9424F8
+      is a subtree of actual Merkle tree with root hash  A49AA7D221135CF24E1E51C4FA2EC066A91B905D
+   verifyAuditProof: proved that root hash computed from the proof sequence coincides with given root hash of actual Merkle tree
+   []
+
+   (20)  [true, true, true, true, true, true, true, true, true, true, true, true, true]
+                                                                                                                         Type: List(Boolean)
+)set output length 80
+ 
+(21) -> )spool

@@ -1,0 +1,38 @@
+)lib IML IML- SHAPKG
+-- Merkle Hash Tree
+HX := HexadecimalExpansion
+MT := BinaryTree HX
+--mt := merkle_tree_sha_1 [shaPadding512(223453245234^i::NNI)$SHAPKG for i in 112..116]
+lbits := [toBits(223453245234^i) for i in 112..116];
+lbits := map(shaPadding512, lbits);
+mt := merkle_tree_sha_1(lbits)
+lf := (leaves mt).3
+tlf := binaryTree lf
+-- auditProof returns the list of hashes, such that the owner of lf
+-- can verify, that his data and hash lf is within the binary tree, provided
+-- that he knows the hash of the root of the tree.
+aP := auditProof(mt, lf)
+-- recomputation of the hash root:
+aPH := [r.hash for r in aP]
+sha_1 concat(sha_1 concat( aPH.2, sha_1 concat(lf, aPH.1)), aPH.3)
+sha_1 concat(sha_1 concat( aPH.2, sha_1 concat(lf, aPH.1)), aPH.3) - value mt
+-- and directly by use of a function:
+verifyAuditProof(value mt, aP, lf)
+
+-- new example
+
+lnni := [(70293475092348750239478502934875^i)::NNI for i in 1..13];
+lbits := [shaPadding512 toBits u for u in lnni];
+mt7 := merkle_tree_sha_1(first(lbits,7))
+nd_mt7 := nodes mt7
+mt13 := merkle_tree_sha_1(lbits)
+lH13 := [sha_1 doc for doc in lbits]
+d := first(lH13,7)
+
+vAP(m) == verifyAuditProof(mt7.value, auditProof(m, first(d,7)), d.(m+1), m)
+aP5 := auditProof(4, first(d,7))
+mt7.value
+d.6
+vAP 5 
+
+[vAP(m) for m in 0..6]

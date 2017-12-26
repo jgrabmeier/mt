@@ -1,0 +1,29 @@
+)lib IML IML- SHAPKG
+-- Consistency Proofs for Merkle Hash Tree
+HX := HexadecimalExpansion
+MT := BinaryTree HX
+
+lnni := [(70293475092348750239478502934875^i)::NNI for i in 1..13];
+lbits := [shaPadding512 toBits u for u in lnni];
+mt13 := merkle_tree_sha_1(lbits)
+d := [sha_1 doc for doc in lbits]
+-- compute the root hashes for the growth of the Merkle tree from 1..13:
+lth := [merkle_tree_sha_1(first(lbits,m)).value for m in 1..13]
+-- for m = 4
+cP4 := consistencyProof(4,d)
+setMessageLevel(1)$SHAPKG
+verifyConsistencyProof(4, 13, lth.4, mt13.value, cP4)
+setMessageLevel(0)$SHAPKG
+3::Bits
+-- for m = 7
+mt7 := merkle_tree_sha_1(first(lbits,7))
+cP7 := consistencyProof(7,d)
+setMessageLevel(1)$SHAPKG
+verifyConsistencyProof(7, 13, lth.7, mt13.value, cP7)
+setMessageLevel(0)$SHAPKG
+6::Bits
+-- and for allP m for m in 1..13]
+vCP(m) == (cP := consistencyProof(m,d); print cP; verifyConsistencyProof(m, 13, lth.m, mt13.value, cP))
+)set output length 140
+[vCP m for m in 1..13]
+)set output length 80
