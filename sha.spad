@@ -1,5 +1,6 @@
 -- Copyright (c) 2017 J. Grabmeier
 -- All rights reserved.
+-- version 4 29.12.2017: addLeaf
 -- version 3 25.12.2017 
 -- version 2 11.12.2017 
 -- version 1 03.12.2017 
@@ -48,8 +49,12 @@ SHAPackage(): public == private where
     largestPowerOfTwo: NNI -> NNI
       ++ largestPowerOfTwo(n) yields k = 2^\kappa such that 
       ++ k < n <=2k
-    path: (NNI, NNI) -> List Boolean
-      ++ path(m,n) yields path for verification of consistency proof.
+    pathLeafToRoot: (NNI, NNI) -> List Boolean
+      ++ path(m,n) yields the path from leaf to root (counting starts at 1) in 
+      ++ a Merkle tree with n leaves (counting start at 1).
+    pathRoofToLeaf: (NNI, NNI) -> List Boolean
+      ++ path(m,n) yields from root to leaf m (counting starts at 1) in 
+      ++ a Merkle tree with n leaves (counting start at 1).
   -----------------------------------------------------------------------------
   -- extensions of Bits:
   -----------------------------------------------------------------------------
@@ -102,6 +107,13 @@ SHAPackage(): public == private where
       ++ siblingTree(subT, mt) computes the sibling tree node of node subT in 
       ++ the tree mt, error, if not a subtree. Can it happen that there is
       ++ no sibling tree? (Do we allow this.
+    node: (MT, List Boolean) -> MT
+      ++ note(t, lb) returns the node, which is reached from the root
+      ++ downwards, b=0 is left child, b=1 is right child.
+    perfect?: MT -> Boolean
+      ++ perfect?(t) tests, whether the Merkle tree t is perfect, i.e. its
+      ++ number of leaves is a power of 2. Note, it is not checked, whether
+      ++ t is a Merkle tree at all.
   -----------------------------------------------------------------------------
   -- SHA help functions
   -----------------------------------------------------------------------------
@@ -135,6 +147,21 @@ SHAPackage(): public == private where
   -----------------------------------------------------------------------------
   -- Merkle Tree Hashing
   -----------------------------------------------------------------------------
+    addLeafNonRecursive: (MT, HX)  -> MT
+      ++ addLeafNonRecursive(mt, hx) adds a new leaf hash hx to an Merkle hash tree.
+    addLeaf: (MT, HX)  -> MT
+      ++ addLeaf(mt, hx) adds a new leaf hash hx to an Merkle hash tree.
+    node: (MT, List Boolean)  -> MT
+      ++ nodeHash(t, path) walks down from the root according to an internal 
+      ++ node accoding to the path, where true goes to the left child and
+      ++ false goes to the right child - as long as possible, neglecting
+      ++ the right end of the path, if necessary. This node is returne.
+    nodeHash: (MT, List Boolean)  -> HX
+      ++ nodeHash(t, path) walks down from the root according to an internal 
+      ++ node accoding to the path, where true goes to the left child and
+      ++ false goes to the right child - as long as possible, neglecting
+      ++ the right end of the path, if necessary. The hash of this node
+      ++ is returned.
     merkle_tree_sha_1: List HX -> MT
       ++ merkle_tree_sha_1(lhx) computes the Merkle hash tree - i.e. the log - 
       ++ for the given list of leaf hases lhx.
@@ -169,6 +196,11 @@ SHAPackage(): public == private where
       ++ false's = 0's or dropping final false's if length does not coincide
       ++ with that of lfH.
     verifyConsistencyProof: (NNI, NNI, HX, HX, List HX) -> Boolean
+      ++ verifyConsistencyProof(m: NNI, n: NNI, r': HX, r: HX, cP: List HX)
+      ++ where 1 <= m <= n, m the number of leaves of an earlier Merkle tree
+      ++ with root hash r'. It is verified that the proof cP enables one
+      ++ to recompute r' and r as the hash tree of the current Merkle tree
+      ++ with n leaves.
     consistencyProofClifton: (NNI, MT) -> List HX
       ++ consistancyProof(m, mt) returns a list of hash codes which enables
       ++ one to prove that the previous hash tree with the first m leaves
@@ -176,10 +208,17 @@ SHAPackage(): public == private where
       ++ value for m is 1.
     consistencyProof': (NNI, List HX, Boolean) ->  List HX
       ++ should become local
+    consistencyProof': (NNI, MT, Boolean) -> List HX
+      ++ should become local
     consistencyProof: (NNI, List HX) -> List HX
-      ++ consistancyProofNew(nl, mt) returns a list of hash codes which enables
-      ++ one to prove that the previous hash tree with the first nl leaves
-      ++ is still a subtree of the Merkle hash tree of mt.
+      ++ consistancyProof(m, lhx) returns a list of hash codes which enables
+      ++ one to prove that the previous hash tree with the first m leaves
+      ++ is still a subtree of the current Merkle hash tree of all n:=#lhx
+      ++ leaves.
+    consistencyProof: (NNI, MT) -> List HX
+      ++ consistancyProof(m, mt) returns a list of hash codes which enables
+      ++ one to prove that the previous hash tree with the first m leaves
+      ++ is still a subtree of the curren tMerkle hash tree mt.
 
   private ==> add
     import OF
@@ -217,23 +256,47 @@ SHAPackage(): public == private where
       k : NNI := bts' :: NNI
       if k=n then k := k quo 2 -- k is largest power of 2 such that k < n <= 2k
       k	
-    path(m: NNI, n: NNI): List Boolean == 
+    pathRootToLeaf(m: NNI, n: NNI): List Boolean == 
+      m = 0 or n = 0 => error "pathRootToLeaf: arguments must be >= 1."
       lb : List Boolean := []
-      m = n => lb
       d : NNI := #(n :: Bits)
       if mLP 1 then print blankSeparate [msg "  depth = ", d :: OF]
-      lb := entries((m-1)  :: NNI :: Bits)
-      if mLP 1 then print blankSeparate [msg "  lb = ", lb :: OF]
       df : NNI := (d - #lb) :: NNI
-      if mLP 1 then print blankSeparate [msg "  diff  = ", df :: OF]
+      lb := entries((m-1)  :: NNI :: Bits)
       lb := concat( new(df, false), lb)
       if mLP 1 then print blankSeparate [msg "  lb = ", lb :: OF]
-      lb := reverse lb
-      if mLP 1 then print blankSeparate [msg "  lb = ", lb :: OF]
-      for b in lb repeat
-        if b then lb := rest lb
-        else break
       lb
+    pathLeafToRoot(m: NNI, n: NNI): List Boolean == 
+      m = 0 or n = 0 => error "pathLeafToRoot: arguments must be >= 1."
+      lb : List Boolean := []
+      m = n => lb
+      k : NNI := 1
+      m : NNI := (m-1) :: NNI
+      while m > 0 repeat
+        k := largestPowerOfTwo n
+        if m >= k then 
+	  lb := cons(true, lb)
+          n := (n-k) :: NNI
+          m := (m-k) :: NNI
+        else
+	  lb := cons(false, lb)
+          n := k
+      concat( new(#(k::Bits), false), lb)
+        
+--      d : NNI := #(n :: Bits)
+--      if mLP 1 then print blankSeparate [msg "  depth = ", d :: OF]
+--      lb := entries((m-1)  :: NNI :: Bits)
+--      if mLP 1 then print blankSeparate [msg "  lb = ", lb :: OF]
+--      df : NNI := (d - #lb) :: NNI
+--      if mLP 1 then print blankSeparate [msg "  diff  = ", df :: OF]
+--      lb := concat( new(df, false), lb)
+--      if mLP 1 then print blankSeparate [msg "  lb = ", lb :: OF]
+--      lb := reverse lb
+--      if mLP 1 then print blankSeparate [msg "  lb = ", lb :: OF]
+--      for b in lb repeat
+--        if b then lb := rest lb
+--        else break
+--      lb
 
       --if (m = 1) or even? m then
       ---- if #lb < #cP then lb then fill with leading 'false' to get equality
@@ -308,16 +371,24 @@ SHAPackage(): public == private where
   -----------------------------------------------------------------------------
   -- extension of BinaryTree
   -----------------------------------------------------------------------------
+    perfect?(t: MT): Boolean == 
+      empty? t => true
+      n : NNI := # leaves t
+      n = 1 => true
+      k : NNI := largestPowerOfTwo n -- smaller than n
+      k+k = n 
     parentTree(subTr: MT, mt: MT): MT == 
       for nd in nodes mt repeat
 	(nd.left = subTr) => return nd
 	(nd.right = subTr) => return nd
-      error "parentTree: first argument is not a subtree of second argument"
+      --print msg "parentTree: first argument is not a subtree of second argument"
+      empty()
     siblingTree(subTr: MT, mt: MT): MT == 
       for nd in nodes mt repeat
 	(nd.left = subTr) => return nd.right
 	(nd.right = subTr) => return nd.left
-      error "siblingTree: first argument is not a subtree of second argument"
+      --error "siblingTree: first argument is not a subtree of second argument"
+      empty()
   -----------------------------------------------------------------------------
   -- SHA-1
   -----------------------------------------------------------------------------
@@ -381,6 +452,48 @@ SHAPackage(): public == private where
   -----------------------------------------------------------------------------
   -- Merkle Tree Hashing
   -----------------------------------------------------------------------------
+    addLeaf (t: MT, hx: HX): MT ==
+      if mLP 2 then print blankSeparate [msg "addLeaf called with t = ", t :: OF, msg " and hx = ", hx :: OF]
+      empty? t => binaryTree hx
+      perfect? t => binaryTree(t, sha_1(concat(t.value, hx) ), binaryTree(hx) )
+      aL : MT := empty()
+      aL := addLeaf(t.right, hx)
+      binaryTree(t.left, sha_1(concat(t.left.value, aL.value)), aL ) 
+
+    addLeafNonRecursive(t: MT, hx: HX): MT ==
+      if mLP 2 then print blankSeparate [msg "addLeafNonRecursive called with t = ", t :: OF, msg " and hx = ", hx :: OF]
+      empty? t => binaryTree hx
+      perfect? t => binaryTree(t, sha_1(concat(t.value, hx) ), binaryTree(hx) )
+      lastLeaf : MT := copy t
+      while not empty? lastLeaf.right repeat lastLeaf := lastLeaf.right
+      if mLP 1 then print blankSeparate [msg "addLeafNonRecursive: lastLeaf = ", lastLeaf :: OF]
+      -- Question: Is parent of lastleaf a perfect tree, then we have to propagete hx further up
+      -- if not, we can substitute the parent tree by the newly formed tree, left child 
+      -- is lastleaf, right child is the new hx.
+      pT : MT := parentTree(lastLeaf, t)
+      -- go upwards as long pt is perfect.
+      while perfect? pT repeat pT := parentTree(pT, t)
+      newTree := binaryTree(pT.right, sha_1(concat(pT.right.value, hx)), binaryTree hx)
+      if mLP 1 then print blankSeparate [msg "addLeafNonRecursive: newTree = ", newTree :: OF]
+      while not empty? pT repeat 
+        newTree := binaryTree(pT.left, sha_1(concat(pT.left.value, newTree.value)), newTree)
+        if mLP 1 then print blankSeparate [msg "addLeafNonRecursive: newTree = ", newTree :: OF]
+        pT := parentTree(pT, t)
+        if mLP 1 then print blankSeparate [msg "addLeafNonRecursive: pT = ", pT :: OF]
+      -- loop ends before the root, as we do that only if t is not perfect!
+      -- Now: pT is a node of t which is not a perfect tree. 
+      newTree
+
+    nodeHash(t: MT, pRL: List Boolean): HX == 
+      nd : MT := copy t
+      while not leaf? nd for b in pRL repeat
+        if b then nd := nd.right else nd := nd.left
+      nd.value	
+    node(t: MT, pRL: List Boolean): MT == 
+      nd : MT := copy t
+      while not leaf? nd for b in pRL repeat
+        if b then nd := nd.right else nd := nd.left
+      nd
     merkle_tree_internal(lh: List HX): MT ==  
       if mLP 2 then print blankSeparate [msg "lh= ", lh :: OF]
       lmt : List MT := [binaryTree(hx) for hx in lh]
@@ -510,13 +623,44 @@ SHAPackage(): public == private where
         lpr := concat(concat(consistencyProof'((m-k)::NNI, last(llv, (n-k)::NNI), false), merkle_tree_sha_1(first(llv, k)).value ), lpr)
       lpr
 
+    consistencyProof'(m: NNI, mt: MT, b: Boolean): List HX == 
+      n : NNI := #leaves mt
+      if mLP 1 then print blankSeparate [msg "  consistencyProof' called with m = ", m :: OF, msg "and n = ", n::OF, msg " and b = ", b::OF]
+      n = m and b => 
+        if mLP 1 then print blankSeparate [msg "  => no further hash value"]
+        []
+      n = m and not b => 
+        if mLP 1 then print blankSeparate [msg "  => proof hash value = ", mt.value :: OF]
+        [mt.value]
+      lpr : List HX := []
+      lpr
+      m >= n => error "consistencyProof': first argument must be smaller that the length of the second argument"
+      k : NNI := largestPowerOfTwo n
+      if mLP 1 then print blankSeparate [msg "        and we have k = ", k :: OF]
+      nk : NNI := (n-k) :: NNI
+      hx : HX := 0
+      if m <= k then
+        hx := mt.right.value
+        mt := mt.left
+        if mLP 1 then print blankSeparate [msg "  => proof hash value = ", hx :: OF]
+	lpr := concat(concat(consistencyProof'(m, mt, b), hx), lpr)
+      else -- m > k
+        hx := mt.left.value
+        mt := mt.right
+        if mLP 1 then print blankSeparate [msg "  => proof hash value = ", hx :: OF]
+        lpr := concat(concat(consistencyProof'((m-k)::NNI, mt, false), hx), lpr)
+      lpr
+
     consistencyProof(m: NNI, llv: List HX): List HX == 
       m = 0 => error "consistencyProof: first argument must be >= 1"
       consistencyProof'(m, llv, true)
+    consistencyProof(m: NNI, mt: MT): List HX == 
+      m = 0 => error "consistencyProof: first argument must be >= 1"
+      consistencyProof'(m, mt, true)
 
     verifyConsistencyProof(m: NNI, n: NNI, r': HX, r: HX, cP: List HX): Boolean == 
       empty? cP => (m=n) and (r=r') 
-      lb : List Boolean := path(m, n)
+      lb : List Boolean := pathLeafToRoot(m, n)
       if mLP 1 then print blankSeparate [msg "  lb = ", lb :: OF]
       hx : HX := 0 
       hx' : HX := 0 
@@ -524,6 +668,7 @@ SHAPackage(): public == private where
         hx := first cP
         hx':= first cP
 	cP := rest cP
+        lb := last(lb, #cP)
       else 
 	hx := r'
 	hx' := r'
@@ -546,14 +691,15 @@ SHAPackage(): public == private where
 		if mLP 1 then print blankSeparate [msg "  path = ", path :: OF]
 		hx := sha_1 concat(hx, hxP)
 		if mLP 1 then print blankSeparate [msg "  actual r = h(", hxsave::OF, msg "+", hxP::OF, msg ") = ", hx::OF]
-      if hx' = r' then
-        print blankSeparate [msg "verifyAuditProof: proved that earlier Merkle tree for leaves 0..", (m-1) :: OF, msg " with computed root hash ", hx' :: OF, msg " is a subtree of actual Merkle tree with root hash ", r :: OF]
-      else
-        print blankSeparate [msg "verifyAuditProof: last argument is not a proof that earlier Merkle for leaves 0..", (m-1) :: OF, msg "with root hash ", r' :: OF, msg " is a subtree of actual Merkle tree with root hash ", r :: OF]
-      if hx = r then
-        print blankSeparate [msg "verifyAuditProof: proved that root hash computed from the proof sequence coincides with given root hash of actual Merkle tree"]
-      else
-        print blankSeparate [msg "verifyAuditProof: from last argument computed hash does not coincide with the one computed from the proof sequence coincides"]
+      if mLP 1 then 
+        if hx' = r' then
+          print blankSeparate [msg "verifyConsistencyProof proved that earlier Merkle tree for leaves 0..", (m-1) :: OF, msg " with computed root hash ", hx' :: OF, msg " is a subtree of actual Merkle tree with root hash ", r :: OF]
+        else
+          print blankSeparate [msg "verifyConsistencyProof: last argument is not a proof that earlier Merkle for leaves 0..", (m-1) :: OF, msg "with root hash ", r' :: OF, msg " is a subtree of actual Merkle tree with root hash ", r :: OF]
+        if hx = r then
+          print blankSeparate [msg "verifyConsistencyProof proved that root hash computed from the proof sequence coincides with given root hash of actual Merkle tree"]
+        else
+          print blankSeparate [msg "verifyConsistencyProof: from last argument computed hash does not coincide with the one computed from the proof sequence coincides"]
       (hx' = r') and (hx = r)
 
     consistencyProofClifton(m: NNI, mt: MT): List HX ==
